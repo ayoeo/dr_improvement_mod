@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "minVersion": "0.4.10",
+  "package": "com.twoandahalfdevs.drimprovement.mixins",
+  "refmap": "mixin.drimprovement.refmap.json",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "GuiBossOverlayMixin",
+    "GuiIngameMixin"
+  ]
+}

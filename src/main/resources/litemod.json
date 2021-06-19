@@ -5,5 +5,8 @@
   "version": "${version}",
   "author": "rice, and only rice",
   "revision": 0,
-  "description": "buy onlyrice by only rice to fund lonely rice"
+  "description": "buy onlyrice by only rice to fund lonely rice",
+  "mixinConfigs": [
+    "mixin.drimprovement.json"
+  ]
 }

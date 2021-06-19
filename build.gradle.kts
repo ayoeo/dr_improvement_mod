@@ -4,8 +4,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 buildscript {
   repositories {
     mavenCentral()
-    maven("http://repo.spongepowered.org/maven")
-    maven("http://files.minecraftforge.net/maven")
+    maven("https://repo.spongepowered.org/maven")
+    maven("https://files.minecraftforge.net/maven")
     maven("https://dl.bintray.com/kotlin/kotlinx")
   }
 
@@ -16,7 +16,7 @@ buildscript {
 }
 
 plugins {
-  kotlin("jvm") version "1.3.72"
+  kotlin("jvm") version "1.3.61"
 }
 
 apply(plugin = "net.minecraftforge.gradle.liteloader")
@@ -41,7 +41,7 @@ dependencies {
 
 configure<UserBaseExtension> {
   version = mcVersion
-  mappings = "snapshot_20170804"
+  mappings = "stable_39"
   runDir = "run"
 }
 
@@ -49,9 +49,9 @@ configure<org.spongepowered.asm.gradle.plugins.MixinExtension> {
   defaultObfuscationEnv = "notch"
 }
 
-//sourceSets["main"].ext {
-//  set("refMap", "mixin.drimprovement.refmap.json")
-//}
+java.sourceSets["main"].ext {
+  set("refMap", "mixin.drimprovement.refmap.json")
+}
 
 tasks.withType<ProcessResources> {
   val props =
@@ -79,7 +79,7 @@ tasks.withType<Jar> {
     }
   })
 
-  from(java.sourceSets["main"].java.map { it.outputStream() })
+  from(java.sourceSets["main"].java)
 }
 
 tasks.withType<KotlinCompile> {
