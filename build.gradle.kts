@@ -46,7 +46,7 @@ configure<UserBaseExtension> {
 }
 
 configure<org.spongepowered.asm.gradle.plugins.MixinExtension> {
-  defaultObfuscationEnv = "notch"
+  defaultObfuscationEnv = "searge"
 }
 
 java.sourceSets["main"].ext {

@@ -122,6 +122,11 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     inGame: Boolean,
     clock: Boolean
   ) {
+    if (minecraft?.player == null) {
+      actionBarMsg = ""
+      actionBarTime = 0
+    }
+
     if (clock && minecraft?.player != null) {
       onTick()
     }

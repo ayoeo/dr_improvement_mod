@@ -13,6 +13,9 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Map;
 import java.util.UUID;
@@ -37,13 +40,12 @@ public abstract class GuiBossOverlayMixin extends Gui {
   /**
    * @author :)
    */
-  @Overwrite
-  public void renderBossHealth() {
+  @Inject(method = "renderBossHealth", at = @At("HEAD"), cancellable = true)
+  public void renderBossHealth(CallbackInfo ci) {
     if (!this.mapBossInfos.isEmpty()) {
       ScaledResolution lvt_1_1_ = new ScaledResolution(this.client);
       int lvt_2_1_ = lvt_1_1_.getScaledWidth();
-//      int lvt_3_1_ = 60;
-      int lvt_3_1_ = 12;
+      int lvt_3_1_ = 45;
 
       for (BossInfoClient info : this.mapBossInfos.values()) {
         if (info.getUniqueId().equals(LiteModDRImprovementKt.getHealthBarUUID())) {
@@ -62,5 +64,6 @@ public abstract class GuiBossOverlayMixin extends Gui {
         }
       }
     }
+    ci.cancel();
   }
 }

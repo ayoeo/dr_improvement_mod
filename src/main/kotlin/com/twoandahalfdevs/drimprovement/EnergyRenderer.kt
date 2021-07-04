@@ -107,7 +107,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
   minecraft.fontRenderer.drawStringWithShadow(
     mrrhuahahhhaul,
     xcenter.toFloat() - lenn,
-    40f,
+    4f,
     0xFFFFFF
   )
 
@@ -142,7 +142,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
   minecraft.fontRenderer.drawStringWithShadow(
     cdStr,
     xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(cdStr) / 2 - 25,
-    ycenter.toFloat() + 28,
+    ycenter.toFloat() - 28,
     0xFFFFFF
   )
   var color = "§c"
@@ -153,7 +153,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
   minecraft.fontRenderer.drawStringWithShadow(
     potsStr,
     xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(potsStr) / 2 + 25,
-    ycenter.toFloat() + 28,
+    ycenter.toFloat() - 28,
     0xFFFFFF
   )
   GlStateManager.popMatrix()

@@ -33,11 +33,11 @@ float sdArc(in vec2 p, in vec2 sca, in vec2 scb, in float ra, in float rb) {
 }
 
 float drawEnergyBar(vec2 uv, float percent, bool flip) {
-  float arc = 20.;// TODO CHANGE FOR THICKEST HAPPY
+  float arc = 23.;// TODO CHANGE FOR THICKEST HAPPY
   float purr = (1. - percent) * arc;
   float ta = flip ? radians(-90. + purr) : radians(90. - purr);
   float tb = radians(arc - purr);
-  float rb = 0.009;// TODO - change for THICKNESS aka also make thick happy ? maybe
+  float rb = 0.01;// TODO - change for THICKNESS aka also make thick happy ? maybe
 
   vec2 offset = vec2(0., .15);// TODO - change to OFFSET IT LOL
   return sdArc(uv + (flip ? -offset : offset), vec2(sin(ta), cos(ta)), vec2(sin(tb), cos(tb)), .2, rb);// TODO change .12 to make TINY or BIG??
@@ -48,7 +48,7 @@ float lenny = 1.3;
 float sizez = 0.025;
 
 float drawHealthBar(vec2 uv) {
-  float startWHY = resolution.y - 240;
+  float startWHY = resolution.y - 100;
   float WHY = startWHY / resolution.y;
   vec2 start = vec2(-lenny / 2.0, WHY);
   return udSegment(uv, start, start + vec2(lenny, 0)) - sizez;

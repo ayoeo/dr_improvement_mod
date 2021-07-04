@@ -5,6 +5,7 @@
   "refmap": "mixin.drimprovement.refmap.json",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "GameRendererMixin",
     "GuiBossOverlayMixin",
     "GuiIngameMixin"
   ]

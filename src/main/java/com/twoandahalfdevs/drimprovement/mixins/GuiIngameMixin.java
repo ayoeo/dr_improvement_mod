@@ -5,7 +5,6 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.gui.ScaledResolution;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -28,23 +27,27 @@ public abstract class GuiIngameMixin extends Gui {
   /**
    * @author :)
    */
-  @Overwrite
-  private void renderPlayerStats(ScaledResolution p_renderPlayerStats_1_) {
+  @Inject(method = "renderPlayerStats", at = @At("HEAD"), cancellable = true)
+  private void renderPlayerStats(ScaledResolution scaledRes, CallbackInfo ci) {
+    ci.cancel();
   }
 
   /**
    * @author :)
    */
-  @Overwrite
-  public void renderExpBar(ScaledResolution p_renderExpBar_1_, int p_renderExpBar_2_) {
+
+  @Inject(method = "renderExpBar", at = @At("HEAD"), cancellable = true)
+  public void renderExpBar(ScaledResolution scaledRes, int x, CallbackInfo ci) {
+    ci.cancel();
   }
 
 
   /**
    * @author :)
    */
-  @Overwrite
-  public void renderSelectedItem(ScaledResolution p_renderSelectedItem_1_) {
+  @Inject(method = "renderSelectedItem", at = @At("HEAD"), cancellable = true)
+  public void renderSelectedItem(ScaledResolution scaledRes, CallbackInfo ci) {
+    ci.cancel();
   }
 
   private static int oldTime = 0;
