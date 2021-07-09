@@ -41,12 +41,12 @@ dependencies {
 
 configure<UserBaseExtension> {
   version = mcVersion
-  mappings = "stable_39"
+  mappings = "snapshot_20170804"
   runDir = "run"
 }
 
 configure<org.spongepowered.asm.gradle.plugins.MixinExtension> {
-  defaultObfuscationEnv = "searge"
+  defaultObfuscationEnv = "notch"
 }
 
 java.sourceSets["main"].ext {

@@ -10,9 +10,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.awt.*;
 
 @Mixin(Minecraft.class)
-public abstract class GameRendererMixin {
+public abstract class MinecraftMixin {
   private static long lastRender = 0;
 
+  // Limit fps to 20 when tabbed out
   @Inject(at = @At("HEAD"), method = "runGameLoop", cancellable = true)
   private void onRender(CallbackInfo callbackInfo) {
     if (!Display.isActive() && System.currentTimeMillis() - lastRender < 50) {

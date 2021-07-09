@@ -156,8 +156,17 @@ fun `draw energy bar and also the health bar too don't forget`() {
     ycenter.toFloat() - 28,
     0xFFFFFF
   )
-  GlStateManager.popMatrix()
 
+  val okFood = minecraft.player.foodStats.foodLevel
+  if (okFood > 15) color = "§a"
+  else if (okFood > 10) color = "§e"
+  minecraft.fontRenderer.drawStringWithShadow(
+    "§rHunger: ${color}${minecraft.player.foodStats.foodLevel}",
+    3f,
+    12f,
+    0xFFFFFF
+  )
+  GlStateManager.popMatrix()
 
   val partial = ((Minecraft.getSystemTime() - lastTick) / 50f).coerceAtMost(1f)
 

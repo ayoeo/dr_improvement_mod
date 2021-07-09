@@ -35,12 +35,10 @@ public abstract class GuiIngameMixin extends Gui {
   /**
    * @author :)
    */
-
   @Inject(method = "renderExpBar", at = @At("HEAD"), cancellable = true)
   public void renderExpBar(ScaledResolution scaledRes, int x, CallbackInfo ci) {
     ci.cancel();
   }
-
 
   /**
    * @author :)
