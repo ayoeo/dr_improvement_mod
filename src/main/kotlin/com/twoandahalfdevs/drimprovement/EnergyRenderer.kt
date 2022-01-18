@@ -1,5 +1,6 @@
 package com.twoandahalfdevs.drimprovement
 
+import com.mumfrey.liteloader.core.runtime.Obf.Minecraft
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.renderer.OpenGlHelper
@@ -7,7 +8,9 @@ import net.minecraft.client.renderer.OpenGlHelper.glUseProgram
 import net.minecraft.client.shader.ShaderLoader
 import net.minecraft.item.Item
 import org.lwjgl.opengl.GL20
+import org.lwjgl.opengl.GL20.glUseProgram
 import java.lang.NumberFormatException
+import java.math.RoundingMode
 import kotlin.math.roundToInt
 
 fun ShaderLoader.shader(): Int {
@@ -88,9 +91,17 @@ var actionBarTime = 0
 
 private var cd = 0
 private var lastUpdatedCdTime = System.currentTimeMillis()
+var bonus = 0
+var lastUpdatedBonusTime = System.currentTimeMillis()
+var lastupdatedCombatTime = System.currentTimeMillis()
 
 private var pots = 10
 private var totalPots = 0
+var combatTimer = 0
+
+private val cdreg = """Cooldown: \[(?:([0-9]*)m)? ?(?:([0-9]*)s)?]""".toRegex()
+private val potreg = """\[([0-9]*)/10] Potions""".toRegex()
+private val combreg = """ Combat: \[([0-9]*)s]""".toRegex()
 
 fun `draw energy bar and also the health bar too don't forget`() {
   if (minecraft.player.health != 1.0F) {
@@ -113,8 +124,8 @@ fun `draw energy bar and also the health bar too don't forget`() {
 
   // Cooldown
   if (actionBarTime > 0) {
-    val cdMatches = """Cooldown: \[(?:([0-9]*)m)? ?(?:([0-9]*)s)?]""".toRegex().find(actionBarMsg)
-    val potMatches = """\[([0-9]*)/10] Potions""".toRegex().find(actionBarMsg)
+    val cdMatches = cdreg.find(actionBarMsg)
+    val potMatches = potreg.find(actionBarMsg)
     if (cdMatches != null) {
       try {
         val min = cdMatches.groupValues.getOrNull(1)
@@ -129,14 +140,40 @@ fun `draw energy bar and also the health bar too don't forget`() {
     if (potMatches != null) {
       pots = potMatches.groupValues.getOrNull(1)?.toInt() ?: 0
     }
+
+    val combatMatches = combreg.find(actionBarMsg)
+
+    if (combatMatches != null) {
+      var vrooom: Int? = null
+      for (m in combatMatches.groupValues) {
+        try {
+          vrooom = m.toInt().coerceAtLeast(vrooom ?: 0)
+        } catch (e: NumberFormatException) {
+        }
+      }
+      if (vrooom != null) {
+//        combatTimer = vrooom
+//        lastupdatedCombatTime = System.currentTimeMillis() - ((60 - actionBarTime) * 50)
+      }
+    }
   }
 
-  totalPots = minecraft.player.inventory.mainInventory
-    .filter { Item.getIdFromItem(it.item) == 373 || Item.getIdFromItem(it.item) == 438 }
-    .count()
+  totalPots = minecraft.player.inventory.mainInventory.count {
+    Item.getIdFromItem(it.item) == 373 || Item.getIdFromItem(it.item) == 438
+  }
 
   val probablyTheCoolDownNow =
     (cd - (System.currentTimeMillis() - lastUpdatedCdTime) / 1000).coerceAtLeast(0)
+
+  val probablyCombatTimer =
+    ((combatTimer.toDouble() / 20.0) - (System.currentTimeMillis() - lastupdatedCombatTime) / 1000.0).coerceAtLeast(
+      0.0
+    )
+
+  val probablyBonusTimer =
+    ((bonus.toDouble() / 20.0) - (System.currentTimeMillis() - lastUpdatedBonusTime) / 1000.0).coerceAtLeast(
+      0.0
+    )
 
   val cdStr = if (probablyTheCoolDownNow > 0) "§c${probablyTheCoolDownNow}s" else "§aReady"
   minecraft.fontRenderer.drawStringWithShadow(
@@ -157,7 +194,36 @@ fun `draw energy bar and also the health bar too don't forget`() {
     0xFFFFFF
   )
 
+  val combatstr = if (probablyCombatTimer > 0) "§c${
+    probablyCombatTimer.toBigDecimal().setScale(1, RoundingMode.UP).toDouble()
+  }s" else "§a:)"
+  minecraft.fontRenderer.drawStringWithShadow(
+    combatstr,
+    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 + (if (clas.contains("Rogue")) 17 else 0),
+    ycenter.toFloat() + 28,
+    0xFFFFFF
+  )
+
+  val bonusStr =
+    if (probablyCombatTimer <= 0) {
+      "§a(:"
+    } else {
+      if (probablyBonusTimer > 0) "§a${
+        probablyBonusTimer.toBigDecimal().setScale(1, RoundingMode.UP).toDouble()
+      }s" else "§c):"
+    }
+
+  if (clas.contains("Rogue")) {
+    minecraft.fontRenderer.drawStringWithShadow(
+      bonusStr,
+      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 - 17,
+      ycenter.toFloat() + 28,
+      0xFFFFFF
+    )
+  }
+
   val okFood = minecraft.player.foodStats.foodLevel
+  color = "§c"
   if (okFood > 15) color = "§a"
   else if (okFood > 10) color = "§e"
   minecraft.fontRenderer.drawStringWithShadow(
@@ -176,7 +242,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
   energyPercent.set(interpolatedExperience)
   resolution.set(displayWidth.toFloat(), displayHeight.toFloat())
 
-  // TODO - configuration
+// TODO - configuration
   colourBase.set(Colour.hex(0xB8291F))
   colourEnergy.set(Colour.hex(0x21DB87))
 
