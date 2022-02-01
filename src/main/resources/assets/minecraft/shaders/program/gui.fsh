@@ -16,6 +16,11 @@ uniform float health;
 uniform float maxHealth;
 uniform float healthPercent;
 
+uniform float showHealth;
+uniform float showEnergy;
+uniform float barWidth;
+uniform float yOffset;
+
 #define PI 3.14159265
 
 float udSegment(in vec2 p, in vec2 a, in vec2 b) {
@@ -33,14 +38,18 @@ float sdArc(in vec2 p, in vec2 sca, in vec2 scb, in float ra, in float rb) {
 }
 
 float drawEnergyBar(vec2 uv, float percent, bool flip) {
-  float arc = 18.;// TODO CHANGE FOR THICKEST HAPPY
+  float arc = barWidth;// TODO CHANGE FOR THICKEST HAPPY
   float purr = (1. - percent) * arc;
   float ta = flip ? radians(-90. + purr) : radians(90. - purr);
   float tb = radians(arc - purr);
   float rb = 0.01;// TODO - change for THICKNESS aka also make thick happy ? maybe
 
-  vec2 offset = vec2(0., .16);// TODO - change to OFFSET IT LOL
-  return sdArc(uv + (flip ? -offset : offset), vec2(sin(ta), cos(ta)), vec2(sin(tb), cos(tb)), .2, rb);// TODO change .12 to make TINY or BIG??
+  vec2 offset = vec2(0., yOffset);// TODO - change to OFFSET IT LOL
+  if (showEnergy == 0.) {
+    return 999999;
+  } else {
+    return sdArc(uv + (flip ? -offset : offset), vec2(sin(ta), cos(ta)), vec2(sin(tb), cos(tb)), .2, rb);// TODO change .12 to make TINY or BIG??
+  }
 }
 
 float lenny = 1.3;
@@ -51,7 +60,10 @@ float drawHealthBar(vec2 uv) {
   float startWHY = resolution.y - 100;
   float WHY = startWHY / resolution.y;
   vec2 start = vec2(-lenny / 2.0, WHY);
-  return udSegment(uv, start, start + vec2(lenny, 0)) - sizez;
+  if (showHealth == 0.) {
+    return 999999;
+  } else {
+    return udSegment(uv, start, start + vec2(lenny, 0)) - sizez; }
 }
 
 vec4 drawArc(float len, bool filled) {

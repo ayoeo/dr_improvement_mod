@@ -83,5 +83,6 @@ tasks.withType<Jar> {
 }
 
 tasks.withType<KotlinCompile> {
+  dependsOn("clean")
   kotlinOptions.jvmTarget = "1.8"
 }

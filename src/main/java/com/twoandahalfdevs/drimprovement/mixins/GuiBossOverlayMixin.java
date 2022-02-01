@@ -1,5 +1,6 @@
 package com.twoandahalfdevs.drimprovement.mixins;
 
+import com.twoandahalfdevs.drimprovement.LiteModDRImprovement;
 import com.twoandahalfdevs.drimprovement.LiteModDRImprovementKt;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.BossInfoClient;
@@ -45,10 +46,13 @@ public abstract class GuiBossOverlayMixin extends Gui {
     if (!this.mapBossInfos.isEmpty()) {
       ScaledResolution lvt_1_1_ = new ScaledResolution(this.client);
       int lvt_2_1_ = lvt_1_1_.getScaledWidth();
-      int lvt_3_1_ = 45;
+      int lvt_3_1_ = 15;
+      if (LiteModDRImprovement.mod.getShowHealthBar()) {
+        lvt_3_1_ += 30;
+      }
 
       for (BossInfoClient info : this.mapBossInfos.values()) {
-        if (info.getUniqueId().equals(LiteModDRImprovementKt.getHealthBarUUID())) {
+        if (info.getUniqueId().equals(LiteModDRImprovementKt.getHealthBarUUID()) && LiteModDRImprovement.mod.getShowHealthBar()) {
           continue;
         }
 

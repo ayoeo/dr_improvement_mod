@@ -1,6 +1,5 @@
 package com.twoandahalfdevs.drimprovement
 
-import com.mumfrey.liteloader.core.runtime.Obf.Minecraft
 import net.minecraft.client.Minecraft
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.renderer.OpenGlHelper
@@ -8,8 +7,6 @@ import net.minecraft.client.renderer.OpenGlHelper.glUseProgram
 import net.minecraft.client.shader.ShaderLoader
 import net.minecraft.item.Item
 import org.lwjgl.opengl.GL20
-import org.lwjgl.opengl.GL20.glUseProgram
-import java.lang.NumberFormatException
 import java.math.RoundingMode
 import kotlin.math.roundToInt
 
@@ -61,6 +58,11 @@ private val colourEnergy = GLUniform.Colour(GL20.glGetUniformLocation(program, "
 private val circleCenter = GLUniform.Vec2(GL20.glGetUniformLocation(program, "circleCenter"))
 
 private val healthPercent = GLUniform.Float(GL20.glGetUniformLocation(program, "healthPercent"))
+
+private val showHealthBar = GLUniform.Float(GL20.glGetUniformLocation(program, "showHealth"))
+private val showEnergyBar = GLUniform.Float(GL20.glGetUniformLocation(program, "showEnergy"))
+private val barWidth = GLUniform.Float(GL20.glGetUniformLocation(program, "barWidth"))
+private val yOffset = GLUniform.Float(GL20.glGetUniformLocation(program, "yOffset"))
 
 private val resolution = GLUniform.Vec2(GL20.glGetUniformLocation(program, "resolution"))
 
@@ -115,12 +117,14 @@ fun `draw energy bar and also the health bar too don't forget`() {
   val xcenter = minecraft.displayWidth / 4
   val ycenter = minecraft.displayHeight / 4
 
-  minecraft.fontRenderer.drawStringWithShadow(
-    mrrhuahahhhaul,
-    xcenter.toFloat() - lenn,
-    4f,
-    0xFFFFFF
-  )
+  if (LiteModDRImprovement.mod.showHealthBar) {
+    minecraft.fontRenderer.drawStringWithShadow(
+      mrrhuahahhhaul,
+      xcenter.toFloat() - lenn,
+      4f,
+      0xFFFFFF
+    )
+  }
 
   // Cooldown
   if (actionBarTime > 0) {
@@ -178,8 +182,8 @@ fun `draw energy bar and also the health bar too don't forget`() {
   val cdStr = if (probablyTheCoolDownNow > 0) "§c${probablyTheCoolDownNow}s" else "§aReady"
   minecraft.fontRenderer.drawStringWithShadow(
     cdStr,
-    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(cdStr) / 2 - 25,
-    ycenter.toFloat() - 28,
+    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(cdStr) / 2 - LiteModDRImprovement.mod.textXOffset,
+    ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
     0xFFFFFF
   )
   var color = "§c"
@@ -189,8 +193,8 @@ fun `draw energy bar and also the health bar too don't forget`() {
   val potsStr = "${color}$usablePots / $totalPots"
   minecraft.fontRenderer.drawStringWithShadow(
     potsStr,
-    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(potsStr) / 2 + 25,
-    ycenter.toFloat() - 28,
+    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(potsStr) / 2 + LiteModDRImprovement.mod.textXOffset,
+    ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
     0xFFFFFF
   )
 
@@ -199,8 +203,8 @@ fun `draw energy bar and also the health bar too don't forget`() {
   }s" else "§a:)"
   minecraft.fontRenderer.drawStringWithShadow(
     combatstr,
-    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 + (if (clas.contains("Rogue")) 17 else 0),
-    ycenter.toFloat() + 28,
+    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 + (if (clas.contains("Rogue")) LiteModDRImprovement.mod.textXOffset - 8 else 0),
+    ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
     0xFFFFFF
   )
 
@@ -216,8 +220,8 @@ fun `draw energy bar and also the health bar too don't forget`() {
   if (clas.contains("Rogue")) {
     minecraft.fontRenderer.drawStringWithShadow(
       bonusStr,
-      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 - 17,
-      ycenter.toFloat() + 28,
+      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 - (LiteModDRImprovement.mod.textXOffset - 8),
+      ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
       0xFFFFFF
     )
   }
@@ -238,7 +242,12 @@ fun `draw energy bar and also the health bar too don't forget`() {
 
   glUseProgram(program)
 
-  val interpolatedExperience = lastExperience + (currentExp - lastExperience) * partial
+  val interpolatedExperience =
+    if (LiteModDRImprovement.mod.interpolateEnergy) {
+      lastExperience + (currentExp - lastExperience) * partial
+    } else {
+      currentExp
+    }
   energyPercent.set(interpolatedExperience)
   resolution.set(displayWidth.toFloat(), displayHeight.toFloat())
 
@@ -251,6 +260,11 @@ fun `draw energy bar and also the health bar too don't forget`() {
 
   val interpolatedHP = lastHpPercent + (hpPercent - lastHpPercent) * partial
   healthPercent.set(interpolatedHP)
+
+  showHealthBar.set(if (LiteModDRImprovement.mod.showHealthBar) 1f else 0f)
+  showEnergyBar.set(if (LiteModDRImprovement.mod.showEnergyBar) 1f else 0f)
+  barWidth.set(LiteModDRImprovement.mod.energyBarWidth)
+  yOffset.set(LiteModDRImprovement.mod.energyBarOffset)
 
   val (centerX, centerY) = Pair(displayWidth / 2, displayHeight / 2)
   circleCenter.set(centerX.toFloat(), centerY.toFloat())
