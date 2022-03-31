@@ -180,62 +180,71 @@ fun `draw energy bar and also the health bar too don't forget`() {
     )
 
   val cdStr = if (probablyTheCoolDownNow > 0) "§c${probablyTheCoolDownNow}s" else "§aReady"
-  minecraft.fontRenderer.drawStringWithShadow(
-    cdStr,
-    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(cdStr) / 2 - LiteModDRImprovement.mod.textXOffset,
-    ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
-    0xFFFFFF
-  )
-  var color = "§c"
-  val usablePots = pots.coerceAtMost(totalPots)
-  if (usablePots > 6) color = "§a"
-  else if (usablePots > 3) color = "§e"
-  val potsStr = "${color}$usablePots / $totalPots"
-  minecraft.fontRenderer.drawStringWithShadow(
-    potsStr,
-    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(potsStr) / 2 + LiteModDRImprovement.mod.textXOffset,
-    ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
-    0xFFFFFF
-  )
 
-  val combatstr = if (probablyCombatTimer > 0) "§c${
-    probablyCombatTimer.toBigDecimal().setScale(1, RoundingMode.UP).toDouble()
-  }s" else "§a:)"
-  minecraft.fontRenderer.drawStringWithShadow(
-    combatstr,
-    xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 + (if (clas.contains("Rogue")) LiteModDRImprovement.mod.textXOffset - 8 else 0),
-    ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
-    0xFFFFFF
-  )
-
-  val bonusStr =
-    if (probablyCombatTimer <= 0) {
-      "§a(:"
-    } else {
-      if (probablyBonusTimer > 0) "§a${
-        probablyBonusTimer.toBigDecimal().setScale(1, RoundingMode.UP).toDouble()
-      }s" else "§c):"
-    }
-
-  if (clas.contains("Rogue")) {
+  if (LiteModDRImprovement.mod.showHelpfulText) {
     minecraft.fontRenderer.drawStringWithShadow(
-      bonusStr,
-      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 - (LiteModDRImprovement.mod.textXOffset - 8),
+      cdStr,
+      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(cdStr) / 2 - LiteModDRImprovement.mod.textXOffset,
+      ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
+      0xFFFFFF
+    )
+    var color = "§c"
+    val usablePots = pots.coerceAtMost(totalPots)
+    if (usablePots > 6) color = "§a"
+    else if (usablePots > 3) color = "§e"
+    val potsStr = "${color}$usablePots / $totalPots"
+    minecraft.fontRenderer.drawStringWithShadow(
+      potsStr,
+      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(potsStr) / 2 + LiteModDRImprovement.mod.textXOffset,
+      ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
+      0xFFFFFF
+    )
+
+    val combatstr = if (probablyCombatTimer > 0) "§c${
+      probablyCombatTimer.toBigDecimal().setScale(1, RoundingMode.UP).toDouble()
+    }s" else "§a:)"
+    minecraft.fontRenderer.drawStringWithShadow(
+      combatstr,
+      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 + (if (clas.contains(
+          "Rogue"
+        )
+      ) LiteModDRImprovement.mod.textXOffset - 8 else 0),
       ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
       0xFFFFFF
     )
+
+    val bonusStr =
+      if (probablyCombatTimer <= 0) {
+        "§a(:"
+      } else {
+        if (probablyBonusTimer > 0) "§a${
+          probablyBonusTimer.toBigDecimal().setScale(1, RoundingMode.UP).toDouble()
+        }s" else "§c):"
+      }
+
+    if (clas.contains("Rogue")) {
+      minecraft.fontRenderer.drawStringWithShadow(
+        bonusStr,
+        xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 - (LiteModDRImprovement.mod.textXOffset - 8),
+        ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
+        0xFFFFFF
+      )
+    }
   }
 
   val okFood = minecraft.player.foodStats.foodLevel
-  color = "§c"
+  var color = "§c"
   if (okFood > 15) color = "§a"
   else if (okFood > 10) color = "§e"
-  minecraft.fontRenderer.drawStringWithShadow(
-    "§rHunger: ${color}${minecraft.player.foodStats.foodLevel}",
-    3f,
-    12f,
-    0xFFFFFF
-  )
+
+  if (LiteModDRImprovement.mod.showEnergyBar) {
+    minecraft.fontRenderer.drawStringWithShadow(
+      "§rHunger: ${color}${minecraft.player.foodStats.foodLevel}",
+      3f,
+      12f,
+      0xFFFFFF
+    )
+  }
   GlStateManager.popMatrix()
 
   val partial = ((Minecraft.getSystemTime() - lastTick) / 50f).coerceAtMost(1f)

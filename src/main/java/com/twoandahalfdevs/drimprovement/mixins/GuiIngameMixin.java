@@ -1,6 +1,7 @@
 package com.twoandahalfdevs.drimprovement.mixins;
 
 import com.twoandahalfdevs.drimprovement.EnergyRendererKt;
+import com.twoandahalfdevs.drimprovement.LiteModDRImprovement;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.gui.ScaledResolution;
@@ -29,7 +30,9 @@ public abstract class GuiIngameMixin extends Gui {
    */
   @Inject(method = "renderPlayerStats", at = @At("HEAD"), cancellable = true)
   private void renderPlayerStats(ScaledResolution scaledRes, CallbackInfo ci) {
-    ci.cancel();
+    if (LiteModDRImprovement.mod.getShowEnergyBar()) {
+      ci.cancel();
+    }
   }
 
   /**
@@ -37,7 +40,9 @@ public abstract class GuiIngameMixin extends Gui {
    */
   @Inject(method = "renderExpBar", at = @At("HEAD"), cancellable = true)
   public void renderExpBar(ScaledResolution scaledRes, int x, CallbackInfo ci) {
-    ci.cancel();
+    if (LiteModDRImprovement.mod.getShowEnergyBar()) {
+      ci.cancel();
+    }
   }
 
   /**
@@ -45,7 +50,9 @@ public abstract class GuiIngameMixin extends Gui {
    */
   @Inject(method = "renderSelectedItem", at = @At("HEAD"), cancellable = true)
   public void renderSelectedItem(ScaledResolution scaledRes, CallbackInfo ci) {
-    ci.cancel();
+    if (LiteModDRImprovement.mod.getShowEnergyBar()) {
+      ci.cancel();
+    }
   }
 
   private static int oldTime = 0;
@@ -57,11 +64,16 @@ public abstract class GuiIngameMixin extends Gui {
     oldTime = this.overlayMessageTime;
     EnergyRendererKt.setActionBarMsg(this.overlayMessage);
     EnergyRendererKt.setActionBarTime(this.overlayMessageTime);
-    this.overlayMessageTime = 0;
+
+    if (LiteModDRImprovement.mod.getShowEnergyBar()) {
+      this.overlayMessageTime = 0;
+    }
   }
 
   @Inject(method = "renderGameOverlay", at = @At("TAIL"))
   private void renderGameOverlayTail(float p_renderGameOverlay_1_, CallbackInfo info) {
-    this.overlayMessageTime = oldTime;
+    if (LiteModDRImprovement.mod.getShowEnergyBar()) {
+      this.overlayMessageTime = oldTime;
+    }
   }
 }

@@ -1,5 +1,6 @@
 package com.twoandahalfdevs.drimprovement.mixins;
 
+import com.twoandahalfdevs.drimprovement.LiteModDRImprovement;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.Display;
 import org.spongepowered.asm.mixin.*;
@@ -16,14 +17,16 @@ public abstract class MinecraftMixin {
   // Limit fps to 20 when tabbed out
   @Inject(at = @At("HEAD"), method = "runGameLoop", cancellable = true)
   private void onRender(CallbackInfo callbackInfo) {
-    if (!Display.isActive() && System.currentTimeMillis() - lastRender < 50) {
-      try {
-        Thread.sleep(1);
-      } catch (InterruptedException e) {
+    if (LiteModDRImprovement.mod.getLimitFpsWhenTabbedOut()) {
+      if (!Display.isActive() && System.currentTimeMillis() - lastRender < 50) {
+        try {
+          Thread.sleep(1);
+        } catch (InterruptedException e) {
+        }
+        callbackInfo.cancel();
+      } else {
+        lastRender = System.currentTimeMillis();
       }
-      callbackInfo.cancel();
-    } else {
-      lastRender = System.currentTimeMillis();
     }
   }
 }

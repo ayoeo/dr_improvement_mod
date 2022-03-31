@@ -79,6 +79,100 @@ class DRImprovementConfigPanel : AbstractConfigPanel() {
 
     this.addControl(
       GuiButton(
+        3,
+        0,
+        210,
+        "Only Change Fov On Sprint: ${LiteModDRImprovement.mod.onlySprintFov}"
+      )
+    ) {
+      LiteModDRImprovement.mod.onlySprintFov = !LiteModDRImprovement.mod.onlySprintFov
+      it.displayString = "Only Change Fov On Sprint: ${LiteModDRImprovement.mod.onlySprintFov}"
+    }
+
+    this.addControl(
+      GuiButton(
+        4,
+        0,
+        240,
+        "Show Helpful Text: ${LiteModDRImprovement.mod.showHelpfulText}"
+      )
+    ) {
+      LiteModDRImprovement.mod.showHelpfulText = !LiteModDRImprovement.mod.showHelpfulText
+      it.displayString = "Show Helpful Text: ${LiteModDRImprovement.mod.showHelpfulText}"
+    }
+
+    this.addControl(
+      GuiButton(
+        5,
+        0,
+        270,
+        "Disable Cooldown Hand Effect: ${LiteModDRImprovement.mod.removeCooldownHandEffect}"
+      )
+    ) {
+      LiteModDRImprovement.mod.removeCooldownHandEffect =
+        !LiteModDRImprovement.mod.removeCooldownHandEffect
+      it.displayString =
+        "Disable Cooldown Hand Effect: ${LiteModDRImprovement.mod.removeCooldownHandEffect}"
+    }
+
+    this.addControl(
+      GuiButton(
+        6,
+        0,
+        300,
+        "Disable W Key Sprint: ${LiteModDRImprovement.mod.noWTapSprint}"
+      )
+    ) {
+      LiteModDRImprovement.mod.noWTapSprint =
+        !LiteModDRImprovement.mod.noWTapSprint
+      it.displayString =
+        "Disable W Key Sprint: ${LiteModDRImprovement.mod.noWTapSprint}"
+    }
+
+    this.addControl(
+      GuiButton(
+        7,
+        0,
+        330,
+        "Hide Mob Debug: ${LiteModDRImprovement.mod.hideMobDebug}"
+      )
+    ) {
+      LiteModDRImprovement.mod.hideMobDebug =
+        !LiteModDRImprovement.mod.hideMobDebug
+      it.displayString =
+        "Hide Mob Debug: ${LiteModDRImprovement.mod.hideMobDebug}"
+    }
+
+    this.addControl(
+      GuiButton(
+        8,
+        0,
+        360,
+        "Show Extra Lore: ${LiteModDRImprovement.mod.showExtraLore}"
+      )
+    ) {
+      LiteModDRImprovement.mod.showExtraLore =
+        !LiteModDRImprovement.mod.showExtraLore
+      it.displayString =
+        "Show Extra Lore: ${LiteModDRImprovement.mod.showExtraLore}"
+    }
+
+    this.addControl(
+      GuiButton(
+        9,
+        0,
+        390,
+        "Limit Fps When Tabbed Out: ${LiteModDRImprovement.mod.limitFpsWhenTabbedOut}"
+      )
+    ) {
+      LiteModDRImprovement.mod.limitFpsWhenTabbedOut =
+        !LiteModDRImprovement.mod.limitFpsWhenTabbedOut
+      it.displayString =
+        "Limit Fps When Tabbed Out: ${LiteModDRImprovement.mod.limitFpsWhenTabbedOut}"
+    }
+
+    this.addControl(
+      GuiButton(
         0,
         0,
         0,

@@ -3,6 +3,7 @@ package com.twoandahalfdevs.drimprovement
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
 import com.mumfrey.liteloader.*
+import com.mumfrey.liteloader.core.LiteLoaderEventBroker
 import com.mumfrey.liteloader.modconfig.ConfigPanel
 import com.mumfrey.liteloader.modconfig.ConfigStrategy
 import com.mumfrey.liteloader.modconfig.ExposableOptions
@@ -11,12 +12,10 @@ import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.network.INetHandler
 import net.minecraft.network.Packet
-import net.minecraft.network.play.server.SPacketEffect
-import net.minecraft.network.play.server.SPacketEntityMetadata
-import net.minecraft.network.play.server.SPacketParticles
-import net.minecraft.network.play.server.SPacketUpdateBossInfo
+import net.minecraft.network.play.server.*
 import net.minecraft.util.EnumParticleTypes
 import net.minecraft.util.text.ITextComponent
+import sun.audio.AudioPlayer.player
 import java.io.File
 import java.util.*
 import kotlin.math.pow
@@ -53,7 +52,7 @@ private val combatPvPTime: Double
   filename = "dr_improvement_mod.json",
   aggressive = true
 )
-class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler, ChatListener,
+class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler, ChatFilter,
   Configurable {
 
   @Expose
@@ -81,8 +80,36 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   var showHealthBar = true
 
   @Expose
+  @SerializedName("only_sprint_fov")
+  var onlySprintFov = false
+
+  @Expose
+  @SerializedName("remove_cooldown_hand_effect")
+  var removeCooldownHandEffect = true
+
+  @Expose
   @SerializedName("show_energy")
   var showEnergyBar = true
+
+  @Expose
+  @SerializedName("show_helpful_text")
+  var showHelpfulText = true
+
+  @Expose
+  @SerializedName("no_w_tap_sprint")
+  var noWTapSprint = false
+
+  @Expose
+  @SerializedName("hide_mob_debug")
+  var hideMobDebug = false
+
+  @Expose
+  @SerializedName("show_extra_lore")
+  var showExtraLore = true
+
+  @Expose
+  @SerializedName("limit_fps")
+  var limitFpsWhenTabbedOut = true
 
   companion object {
     lateinit var mod: LiteModDRImprovement
@@ -94,11 +121,11 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   override fun upgradeSettings(v: String?, c: File?, o: File?) {}
 
-  override fun getConfigPanelClass(): Class<out ConfigPanel> {
-    return DRImprovementConfigPanel::class.java
-  }
-
-  override fun onChat(chat: ITextComponent, message: String) {
+  override fun onChat(
+    chat: ITextComponent,
+    message: String,
+    newMessage: LiteLoaderEventBroker.ReturnValue<ITextComponent>?
+  ): Boolean {
     val msg = chat.unformattedText
     val abilmatches = abilityreg.find(msg)
 
@@ -142,6 +169,10 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
         lastupdatedCombatTime = System.currentTimeMillis()
         combatTimer = (20 * combatPveTime).roundToInt()
+
+        if (hideMobDebug) { // todo - setting debug mob
+          return false
+        }
       }
     } else if (attacker != null && attacker.isNotEmpty()) {
       // MONSTER??
@@ -158,19 +189,44 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
             (20 * combatPveTime).roundToInt()
           else
             (20 * combatPvPTime).roundToInt()
+
+        if (hideMobDebug) { // todo - setting debug mob
+          return false
+        }
       }
     }
+    return true
+  }
+
+  override fun getConfigPanelClass(): Class<out ConfigPanel> {
+    return DRImprovementConfigPanel::class.java
   }
 
   override fun getHandledPackets(): MutableList<Class<out Packet<*>>> =
     mutableListOf(
       SPacketParticles::class.java,
       SPacketEffect::class.java,
-      SPacketUpdateBossInfo::class.java
+      SPacketUpdateBossInfo::class.java,
+      SPacketUpdateScore::class.java,
+      SPacketEntityMetadata::class.java
     )
+
+  private var needsHealthUpdate = mutableMapOf<String, UpdateInfo>()
+  private var maxHealthValues = mutableMapOf<String, Int>()
+
+  data class UpdateInfo(var goodToUpdate: Boolean, val freshHealth: Int)
 
   override fun handlePacket(netHandler: INetHandler?, packet: Packet<*>?): Boolean {
     if (minecraft.player == null) return true
+
+    if (packet is SPacketUpdateScore) {
+      if (packet.objectiveName != "health") {
+        return true
+      }
+
+      needsHealthUpdate[packet.playerName] = UpdateInfo(false, packet.scoreValue)
+      return false
+    }
 
     if (packet is SPacketUpdateBossInfo) {
       val text = packet.name?.unformattedText ?: return true
@@ -234,12 +290,16 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       }
     } else if (packet is SPacketEntityMetadata) {
       // TODO - update player health over head : o
+      val player = minecraft.world.getEntityByID(packet.entityId)
+      if (player != null) {
+        needsHealthUpdate[player.name]?.let {
+          it.goodToUpdate = true
+        }
+      }
     }
 
     return true
   }
-
-  private var helpMe = 0
 
   override fun onTick(
     minecraft: Minecraft?,
@@ -252,7 +312,39 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       actionBarTime = 0
     }
 
-    if (clock && minecraft?.player != null) onTick()
+    if (clock && minecraft?.player != null) {
+      onTick()
+
+      // Update health
+      needsHealthUpdate = needsHealthUpdate.filter { (name, updateInfo) ->
+        val player = minecraft.world.getPlayerEntityByName(name)
+        if (player != null && updateInfo.goodToUpdate) {
+          if (player.health > 20.0) {
+            println("Abil: ${player.health}, ${player.maxHealth}, ${updateInfo.freshHealth}")
+          }
+          val ratio = player.maxHealth / player.health
+          val maxHealth = updateInfo.freshHealth.toDouble() * ratio
+          maxHealthValues[player.name] = maxHealth.roundToInt()
+          false
+        } else {
+          true
+        }
+      }.toMutableMap()
+
+      // Update the scoreboard to reflect real health values
+      minecraft.world.scoreboard.getObjective("health")
+        ?.scoreboard
+        ?.scores
+        ?.forEach {
+          maxHealthValues[it.playerName]?.let { maxHealth ->
+            val player = minecraft.world.getPlayerEntityByName(it.playerName)
+            if (player != null) {
+              val ratio = player.health / player.maxHealth
+              it.scorePoints = (maxHealth.toDouble() * ratio).roundToInt()
+            }
+          }
+        }
+    }
   }
 
   override fun onPreRenderHUD(screenWidth: Int, screenHeight: Int) {
