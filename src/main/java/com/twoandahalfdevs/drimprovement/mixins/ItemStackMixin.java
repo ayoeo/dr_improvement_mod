@@ -1,7 +1,6 @@
 package com.twoandahalfdevs.drimprovement.mixins;
 
 import com.twoandahalfdevs.drimprovement.LiteModDRImprovement;
-import kotlin.text.MatchGroup;
 import kotlin.text.MatchGroupCollection;
 import kotlin.text.MatchResult;
 import kotlin.text.Regex;
@@ -16,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Mixin(ItemStack.class)
@@ -29,13 +29,9 @@ public abstract class ItemStackMixin {
   private void getTooltip(EntityPlayer i, ITooltipFlag nbttagcompound, CallbackInfoReturnable<List<String>> cir) {
     if (!LiteModDRImprovement.mod.getShowExtraLore()) return;
 
-    List<String> list = cir.getReturnValue();
+    List<String> tooltipList = cir.getReturnValue();
+    List<String> additionalList = new ArrayList<>();
 
-    if (this.stackTagCompound != null && (this.stackTagCompound.hasKey("origin") || this.stackTagCompound != null && this.stackTagCompound.hasKey("RepairCost"))) {
-      if (!(this.stackTagCompound.hasKey("RepairCost") && this.stackTagCompound.getInteger("RepairCost") == 0 && !this.stackTagCompound.hasKey("origin"))) {
-        list.add("");
-      }
-    }
 
     if (this.stackTagCompound != null && this.stackTagCompound.hasKey("origin")) {
       String origin = this.stackTagCompound.getString("origin");
@@ -46,7 +42,7 @@ public abstract class ItemStackMixin {
           String originType = groups.get(1).getValue();
           String player = groups.get(2).getValue();
 
-          list.add(TextFormatting.GRAY + "Origin: " + originType + " - " + TextFormatting.ITALIC + player);
+          additionalList.add(TextFormatting.GRAY + "Origin: " + originType + " - " + TextFormatting.ITALIC + player);
         }
       }
     }
@@ -55,8 +51,13 @@ public abstract class ItemStackMixin {
     if (this.stackTagCompound != null && this.stackTagCompound.hasKey("RepairCost")) {
       int cost = this.stackTagCompound.getInteger("RepairCost");
       if (cost != 0) {
-        list.add(TextFormatting.GRAY + "Durability: " + cost);
+        additionalList.add(TextFormatting.GRAY + "Durability: " + cost);
       }
+    }
+
+    if (!additionalList.isEmpty()) {
+      tooltipList.add("");
+      tooltipList.addAll(additionalList);
     }
 //    for (String s : list) {
 //      System.out.println("s: " + s);

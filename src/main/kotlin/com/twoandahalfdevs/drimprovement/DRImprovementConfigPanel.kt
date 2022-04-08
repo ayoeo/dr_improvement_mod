@@ -4,7 +4,6 @@ import com.mumfrey.liteloader.core.LiteLoader
 import com.mumfrey.liteloader.modconfig.AbstractConfigPanel
 import com.mumfrey.liteloader.modconfig.ConfigPanelHost
 import net.minecraft.client.gui.GuiButton
-import net.minecraft.client.gui.GuiSlider
 
 class DRImprovementConfigPanel : AbstractConfigPanel() {
   override fun getPanelTitle() = "DR Improvement Config"
@@ -134,13 +133,13 @@ class DRImprovementConfigPanel : AbstractConfigPanel() {
         7,
         0,
         330,
-        "Hide Mob Debug: ${LiteModDRImprovement.mod.hideMobDebug}"
+        "Hide Debug: ${LiteModDRImprovement.mod.hideDebug}"
       )
     ) {
-      LiteModDRImprovement.mod.hideMobDebug =
-        !LiteModDRImprovement.mod.hideMobDebug
+      LiteModDRImprovement.mod.hideDebug =
+        !LiteModDRImprovement.mod.hideDebug
       it.displayString =
-        "Hide Mob Debug: ${LiteModDRImprovement.mod.hideMobDebug}"
+        "Hide Debug: ${LiteModDRImprovement.mod.hideDebug}"
     }
 
     this.addControl(
@@ -181,6 +180,45 @@ class DRImprovementConfigPanel : AbstractConfigPanel() {
     ) {
       LiteModDRImprovement.mod.interpolateEnergy = !LiteModDRImprovement.mod.interpolateEnergy
       it.displayString = "Interpolate Energy: ${LiteModDRImprovement.mod.interpolateEnergy}"
+    }
+
+    this.addControl(
+      GuiButton(
+        0,
+        0,
+        420,
+        "Threaded Input: ${LiteModDRImprovement.mod.threadedMouseInput}"
+      )
+    ) {
+      LiteModDRImprovement.mod.threadedMouseInput = !LiteModDRImprovement.mod.threadedMouseInput
+      it.displayString = "Threaded Input: ${LiteModDRImprovement.mod.threadedMouseInput}"
+    }
+
+    val button = GuiButton(
+      0,
+      0,
+      450,
+      "Rapid Mouse Polling: ${LiteModDRImprovement.mod.rapidMousePolling} (req. threaded input) (trade 1 cpu core for <0.5ms latency lmao I'm turning it on idk about you)"
+    )
+    button.setWidth(640)
+    this.addControl(button) {
+      LiteModDRImprovement.mod.rapidMousePolling = !LiteModDRImprovement.mod.rapidMousePolling
+      it.displayString =
+        "Rapid Mouse Polling: ${LiteModDRImprovement.mod.rapidMousePolling} (req. threaded input) (trade 1 cpu core for <0.5ms latency lmao I'm turning it on idk about you)"
+    }
+
+    this.addControl(
+      GuiButton(
+        0,
+        0,
+        480,
+        "Prevent Hotbar Scrolling: ${LiteModDRImprovement.mod.preventHotbarScrolling}"
+      )
+    ) {
+      LiteModDRImprovement.mod.preventHotbarScrolling =
+        !LiteModDRImprovement.mod.preventHotbarScrolling
+      it.displayString =
+        "Prevent Hotbar Scrolling: ${LiteModDRImprovement.mod.preventHotbarScrolling}"
     }
   }
 }

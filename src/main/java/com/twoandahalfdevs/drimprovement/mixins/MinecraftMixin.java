@@ -2,13 +2,13 @@ package com.twoandahalfdevs.drimprovement.mixins;
 
 import com.twoandahalfdevs.drimprovement.LiteModDRImprovement;
 import net.minecraft.client.Minecraft;
+import net.minecraft.entity.player.InventoryPlayer;
 import org.lwjgl.opengl.Display;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import java.awt.*;
 
 @Mixin(Minecraft.class)
 public abstract class MinecraftMixin {
@@ -27,6 +27,28 @@ public abstract class MinecraftMixin {
       } else {
         lastRender = System.currentTimeMillis();
       }
+    }
+  }
+
+  @Redirect(method = "runTickMouse", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/InventoryPlayer;changeCurrentItem(I)V"))
+  private void getCooledAttackStrength(InventoryPlayer instance, int direction) {
+    if (LiteModDRImprovement.mod.getPreventHotbarScrolling()) {
+      return;
+    }
+
+    if (direction > 0) {
+      direction = 1;
+    }
+
+    if (direction < 0) {
+      direction = -1;
+    }
+
+    for (instance.currentItem -= direction; instance.currentItem < 0; instance.currentItem += 9) {
+    }
+
+    while (instance.currentItem >= 9) {
+      instance.currentItem -= 9;
     }
   }
 }

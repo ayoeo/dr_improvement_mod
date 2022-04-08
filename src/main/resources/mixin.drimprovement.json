@@ -9,6 +9,7 @@
     "EntityPlayerSpMixin",
     "GuiBossOverlayMixin",
     "GuiIngameMixin",
+    "GuiNewChatMixin",
     "ItemModelGeneratorMixin",
     "ItemRendererMixin",
     "ItemStackMixin",

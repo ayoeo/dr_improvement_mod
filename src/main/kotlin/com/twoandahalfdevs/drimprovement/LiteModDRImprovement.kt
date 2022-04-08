@@ -3,21 +3,31 @@ package com.twoandahalfdevs.drimprovement
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
 import com.mumfrey.liteloader.*
+import com.mumfrey.liteloader.core.LiteLoader
 import com.mumfrey.liteloader.core.LiteLoaderEventBroker
 import com.mumfrey.liteloader.modconfig.ConfigPanel
 import com.mumfrey.liteloader.modconfig.ConfigStrategy
 import com.mumfrey.liteloader.modconfig.ExposableOptions
+import net.java.games.input.Controller
+import net.java.games.input.ControllerEnvironment
+import net.java.games.input.Mouse
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.renderer.GlStateManager
+import net.minecraft.client.settings.KeyBinding
 import net.minecraft.network.INetHandler
 import net.minecraft.network.Packet
 import net.minecraft.network.play.server.*
 import net.minecraft.util.EnumParticleTypes
+import net.minecraft.util.MouseHelper
+import net.minecraft.util.text.ChatType
 import net.minecraft.util.text.ITextComponent
-import sun.audio.AudioPlayer.player
+import net.minecraft.util.text.TextComponentString
+import org.lwjgl.input.Keyboard
 import java.io.File
+import java.lang.reflect.Constructor
 import java.util.*
+import java.util.concurrent.Semaphore
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
@@ -31,7 +41,7 @@ var barMaxHealth = 0
 var clas = "???"
 var xp = "???"
 
-var healthBarUUID: UUID? = null;
+var healthBarUUID: UUID? = null
 
 private val abilityreg = """(.*) has activated The Fast""".toRegex()
 private val debugDmg = """(?:[0-9]+ DMG -> (.+) \[[0-9]+ HP])|(?:-[0-9]+ HP \((.+)\))""".toRegex()
@@ -39,7 +49,8 @@ private val otherStuff = listOf("THORNS", "IN FIRE", "ON FIRE", "LAVA", "FALL", 
 
 // TODO - what if you don't have the whole tree lmfao idk it's FUCKED IT'S ALLL FUCKED WHAT DO I DO
 private const val combatBonusTime = 6.5
-//private const val combatPveTimeRog = 5.2
+
+val hideDebugKeybind = KeyBinding("Show/Hide Debug", Keyboard.KEY_O, "Dr Improvement Mod");
 
 private val combatPveTime: Double
   get() = if (clas.contains("Rogue")) 5.2 else 8.0
@@ -101,7 +112,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   @Expose
   @SerializedName("hide_mob_debug")
-  var hideMobDebug = false
+  var hideDebug = false
 
   @Expose
   @SerializedName("show_extra_lore")
@@ -111,12 +122,20 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   @SerializedName("limit_fps")
   var limitFpsWhenTabbedOut = true
 
+  @Expose
+  @SerializedName("rapid_mouse_polling")
+  var rapidMousePolling = false
+
+  @Expose
+  @SerializedName("prevent_hotbar_scrolling")
+  var preventHotbarScrolling = false
+
+  @Expose
+  @SerializedName("threaded_mouse_input")
+  var threadedMouseInput = true
+
   companion object {
     lateinit var mod: LiteModDRImprovement
-  }
-
-  init {
-    mod = this
   }
 
   override fun upgradeSettings(v: String?, c: File?, o: File?) {}
@@ -170,7 +189,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         lastupdatedCombatTime = System.currentTimeMillis()
         combatTimer = (20 * combatPveTime).roundToInt()
 
-        if (hideMobDebug) { // todo - setting debug mob
+        if (hideDebug) { // todo - setting debug mob
           return false
         }
       }
@@ -190,7 +209,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
           else
             (20 * combatPvPTime).roundToInt()
 
-        if (hideMobDebug) { // todo - setting debug mob
+        if (hideDebug) { // todo - setting debug mob
           return false
         }
       }
@@ -202,6 +221,9 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     return DRImprovementConfigPanel::class.java
   }
 
+  val debugRegex =
+    Regex("""^\+[0-9]+ HP.*\[[0-9]+ HP]| *\*.*\*|[0-9]+ DMG -> .*\[[0-9]+ HP]|-[0-9]+ HP \(.*\) \[[0-9]+ HP]|-[0-9]+ HP \(.*\) \[[0-9]+]| *\* OPPONENT .*\*| *Drained Energy .*\*|Your Gem Find resulted in gems.| *\+ [0-9]+ EXP \[.*]| *\+[0-9]+G| *\+[0-9]+ (?:Logs|Planks|Clay|Ceramic|Cobblestone|Stone Brick|Grain|Bread)|You did not have room for [0-9]+ .*, so they were discarded.|\+.*|-.*""")
+
   override fun getHandledPackets(): MutableList<Class<out Packet<*>>> =
     mutableListOf(
       SPacketParticles::class.java,
@@ -209,6 +231,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       SPacketUpdateBossInfo::class.java,
       SPacketUpdateScore::class.java,
       SPacketEntityMetadata::class.java
+//      SPacketSetExperience::class.java
     )
 
   private var needsHealthUpdate = mutableMapOf<String, UpdateInfo>()
@@ -216,8 +239,19 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   data class UpdateInfo(var goodToUpdate: Boolean, val freshHealth: Int)
 
+  private var lastExp = 1f
   override fun handlePacket(netHandler: INetHandler?, packet: Packet<*>?): Boolean {
     if (minecraft.player == null) return true
+
+//    if (packet is SPacketSetExperience) {
+//      val exp = packet.experienceBar
+//      val usedExp = lastExp - exp
+//      if (exp < lastExp) {
+//        println("Used: $usedExp")
+//      }
+//      lastExp = exp
+//      return true
+//    }
 
     if (packet is SPacketUpdateScore) {
       if (packet.objectiveName != "health") {
@@ -232,12 +266,12 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       val text = packet.name?.unformattedText ?: return true
 
       if (text.startsWith("LV. ")) {
-        healthBarUUID = packet.uniqueId;
+        healthBarUUID = packet.uniqueId
       }
 
       // This is our health bar
       if (packet.uniqueId == healthBarUUID) {
-        val split = text.split('-');
+        val split = text.split('-')
         clas = split[0].trim()
         val hp = split[1].trim()
         xp = split[2].trim()
@@ -312,6 +346,17 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       actionBarTime = 0
     }
 
+    if (inGame && minecraft?.currentScreen == null) {
+      if (hideDebugKeybind.isPressed) {
+        hideDebug = !hideDebug
+        LiteLoader.getInstance().writeConfig(mod)
+        minecraft?.ingameGUI?.addChatMessage(
+          ChatType.CHAT,
+          TextComponentString("§7[Debug]: ${if (hideDebug) "§cHidden" else "§aShown"}§7.")
+        )
+      }
+    }
+
     if (clock && minecraft?.player != null) {
       onTick()
 
@@ -320,7 +365,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         val player = minecraft.world.getPlayerEntityByName(name)
         if (player != null && updateInfo.goodToUpdate) {
           if (player.health > 20.0) {
-            println("Abil: ${player.health}, ${player.maxHealth}, ${updateInfo.freshHealth}")
+//            println("Abil: ${player.health}, ${player.maxHealth}, ${updateInfo.freshHealth}")
           }
           val ratio = player.maxHealth / player.health
           val maxHealth = updateInfo.freshHealth.toDouble() * ratio
@@ -364,5 +409,78 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   override fun getName(): String = "DR Improvement Mod"
   override fun getVersion(): String = "1.1"
 
-  override fun init(configPath: File?) = Unit
+  @Throws(ReflectiveOperationException::class)
+  private fun createDefaultEnvironment(): ControllerEnvironment? {
+    val constructor: Constructor<ControllerEnvironment> =
+      Class.forName("net.java.games.input.DefaultControllerEnvironment")
+        .declaredConstructors[0] as Constructor<ControllerEnvironment>
+    constructor.isAccessible = true
+
+    return constructor.newInstance()
+  }
+
+  var dx = 0
+  var dy = 0
+  private val mice = mutableListOf<Mouse>()
+  val pollingSemaphore = Semaphore(1)
+
+  private var wasThreaded = threadedMouseInput
+  override fun init(configPath: File?) {
+    mod = this
+
+    LiteLoader.getInput().registerKeyBinding(hideDebugKeybind)
+
+    Minecraft.getMinecraft().mouseHelper = if (threadedMouseInput) {
+      RawMouseHelper()
+    } else {
+      MouseHelper()
+    }
+
+    val inputThread = Thread {
+      while (true) {
+        if (wasThreaded && !threadedMouseInput) {
+          minecraft.mouseHelper = MouseHelper()
+          println("Turning off threaded input")
+        } else if (!wasThreaded && threadedMouseInput) {
+          minecraft.mouseHelper = RawMouseHelper()
+          println("Turning on threaded input")
+        }
+        wasThreaded = threadedMouseInput
+
+        if (!threadedMouseInput) {
+          Thread.sleep(100)
+          continue
+        }
+
+        if (mice.isEmpty()) {
+          println("rescanning")
+          try {
+            val controllers: Array<Controller> = createDefaultEnvironment()!!.controllers
+            for (controller in controllers.filter { it.type == Controller.Type.MOUSE }) {
+              mice.add(controller as Mouse)
+            }
+          } catch (ignored: ReflectiveOperationException) {
+          }
+        } else {
+          mice.forEach { mouse ->
+            mouse.poll()
+            pollingSemaphore.acquire()
+            if (minecraft.inGameHasFocus) {
+              dx += mouse.x.pollData.toInt()
+              dy += mouse.y.pollData.toInt()
+            }
+            pollingSemaphore.release()
+          }
+        }
+
+        // Now we wait (or do we)
+        if (!rapidMousePolling) {
+          Thread.sleep(1)
+        }
+      }
+    }
+    inputThread.name = "inputThread"
+    inputThread.priority = Thread.MAX_PRIORITY
+    inputThread.start()
+  }
 }
