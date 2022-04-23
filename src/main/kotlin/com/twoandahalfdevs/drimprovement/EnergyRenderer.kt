@@ -92,10 +92,10 @@ var actionBarMsg = ""
 var actionBarTime = 0
 
 private var cd = 0
-private var lastUpdatedCdTime = System.currentTimeMillis()
+private var lastUpdatedCdTime = Minecraft.getSystemTime()
 var bonus = 0
-var lastUpdatedBonusTime = System.currentTimeMillis()
-var lastupdatedCombatTime = System.currentTimeMillis()
+var lastUpdatedBonusTime = Minecraft.getSystemTime()
+var lastupdatedCombatTime = Minecraft.getSystemTime()
 
 private var pots = 10
 private var totalPots = 0
@@ -122,7 +122,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
       mrrhuahahhhaul,
       xcenter.toFloat() - lenn,
       4f,
-      0xFFFFFF
+      0xFFFFFFFF.toInt()
     )
   }
 
@@ -137,7 +137,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
         val minutes = if (min != null && min.isNotEmpty()) min.toInt() else 0
         val seconds = if (sec != null && sec.isNotEmpty()) sec.toInt() else 0
         cd = minutes * 60 + seconds
-        lastUpdatedCdTime = System.currentTimeMillis() - ((60 - actionBarTime) * 50)
+        lastUpdatedCdTime = Minecraft.getSystemTime() - ((60 - actionBarTime) * 50)
       } catch (e: NumberFormatException) {
       }
     }
@@ -157,7 +157,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
       }
       if (vrooom != null) {
 //        combatTimer = vrooom
-//        lastupdatedCombatTime = System.currentTimeMillis() - ((60 - actionBarTime) * 50)
+//        lastupdatedCombatTime = Minecraft.getSystemTime() - ((60 - actionBarTime) * 50)
       }
     }
   }
@@ -167,15 +167,15 @@ fun `draw energy bar and also the health bar too don't forget`() {
   }
 
   val probablyTheCoolDownNow =
-    (cd - (System.currentTimeMillis() - lastUpdatedCdTime) / 1000).coerceAtLeast(0)
+    (cd - (Minecraft.getSystemTime() - lastUpdatedCdTime) / 1000).coerceAtLeast(0)
 
   val probablyCombatTimer =
-    ((combatTimer.toDouble() / 20.0) - (System.currentTimeMillis() - lastupdatedCombatTime) / 1000.0).coerceAtLeast(
+    ((combatTimer.toDouble() / 20.0) - (Minecraft.getSystemTime() - lastupdatedCombatTime) / 1000.0).coerceAtLeast(
       0.0
     )
 
   val probablyBonusTimer =
-    ((bonus.toDouble() / 20.0) - (System.currentTimeMillis() - lastUpdatedBonusTime) / 1000.0).coerceAtLeast(
+    ((bonus.toDouble() / 20.0) - (Minecraft.getSystemTime() - lastUpdatedBonusTime) / 1000.0).coerceAtLeast(
       0.0
     )
 
@@ -186,7 +186,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
       cdStr,
       xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(cdStr) / 2 - LiteModDRImprovement.mod.textXOffset,
       ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
-      0xFFFFFF
+      0xFFFFFFFF.toInt()
     )
     var color = "§c"
     val usablePots = pots.coerceAtMost(totalPots)
@@ -197,7 +197,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
       potsStr,
       xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(potsStr) / 2 + LiteModDRImprovement.mod.textXOffset,
       ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
-      0xFFFFFF
+      0xFFFFFFFF.toInt()
     )
 
     val combatstr = if (probablyCombatTimer > 0) "§c${
@@ -210,7 +210,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
         )
       ) LiteModDRImprovement.mod.textXOffset - 8 else 0),
       ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
-      0xFFFFFF
+      0xFFFFFFFF.toInt()
     )
 
     val bonusStr =
@@ -227,7 +227,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
         bonusStr,
         xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 - (LiteModDRImprovement.mod.textXOffset - 8),
         ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
-        0xFFFFFF
+        0xFFFFFFFF.toInt()
       )
     }
   }
@@ -237,12 +237,12 @@ fun `draw energy bar and also the health bar too don't forget`() {
   if (okFood > 15) color = "§a"
   else if (okFood > 10) color = "§e"
 
-  if (LiteModDRImprovement.mod.showEnergyBar) {
+  if (LiteModDRImprovement.mod.creativeModeLook) {
     minecraft.fontRenderer.drawStringWithShadow(
-      "§rHunger: ${color}${minecraft.player.foodStats.foodLevel}",
+      "§fHunger: ${color}${minecraft.player.foodStats.foodLevel}",
       3f,
       12f,
-      0xFFFFFF
+      0xFFFFFFFF.toInt()
     )
   }
   GlStateManager.popMatrix()

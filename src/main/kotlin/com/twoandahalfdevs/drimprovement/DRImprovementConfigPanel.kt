@@ -212,6 +212,20 @@ class DRImprovementConfigPanel : AbstractConfigPanel() {
         0,
         0,
         480,
+        "Creative Mode Look: ${LiteModDRImprovement.mod.creativeModeLook}"
+      )
+    ) {
+      LiteModDRImprovement.mod.creativeModeLook =
+        !LiteModDRImprovement.mod.creativeModeLook
+      it.displayString =
+        "Creative Mode Look: ${LiteModDRImprovement.mod.creativeModeLook}"
+    }
+
+    this.addControl(
+      GuiButton(
+        0,
+        0,
+        510,
         "Prevent Hotbar Scrolling: ${LiteModDRImprovement.mod.preventHotbarScrolling}"
       )
     ) {

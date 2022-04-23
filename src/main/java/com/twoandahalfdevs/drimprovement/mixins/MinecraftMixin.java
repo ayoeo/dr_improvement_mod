@@ -18,14 +18,14 @@ public abstract class MinecraftMixin {
   @Inject(at = @At("HEAD"), method = "runGameLoop", cancellable = true)
   private void onRender(CallbackInfo callbackInfo) {
     if (LiteModDRImprovement.mod.getLimitFpsWhenTabbedOut()) {
-      if (!Display.isActive() && System.currentTimeMillis() - lastRender < 50) {
+      if (!Display.isActive() && Minecraft.getSystemTime() - lastRender < 50) {
         try {
           Thread.sleep(1);
         } catch (InterruptedException e) {
         }
         callbackInfo.cancel();
       } else {
-        lastRender = System.currentTimeMillis();
+        lastRender = Minecraft.getSystemTime();
       }
     }
   }

@@ -103,6 +103,10 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   var showEnergyBar = true
 
   @Expose
+  @SerializedName("creative_mode_look")
+  var creativeModeLook = false
+
+  @Expose
   @SerializedName("show_helpful_text")
   var showHelpfulText = true
 
@@ -150,7 +154,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
     val matches = abilmatches?.groupValues?.getOrNull(1)
     if (matches?.endsWith(minecraft.player.name) == true) {
-      lastUpdatedBonusTime = System.currentTimeMillis()
+      lastUpdatedBonusTime = Minecraft.getSystemTime()
       bonus = (20 * combatBonusTime).roundToInt()
     }
 
@@ -159,7 +163,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     val attacked = dmgMatches?.groupValues?.getOrNull(1)
     val attacker = dmgMatches?.groupValues?.getOrNull(2)
     val probablyCombatTimer =
-      ((combatTimer.toDouble() / 20.0) - (System.currentTimeMillis() - lastupdatedCombatTime) / 1000.0).coerceAtLeast(
+      ((combatTimer.toDouble() / 20.0) - (Minecraft.getSystemTime() - lastupdatedCombatTime) / 1000.0).coerceAtLeast(
         0.0
       )
 
@@ -173,20 +177,20 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         // Player moment
         // COMBAT BONUS WHOAHHO
         if (probablyCombatTimer <= 0.0) {
-          lastUpdatedBonusTime = System.currentTimeMillis()
+          lastUpdatedBonusTime = Minecraft.getSystemTime()
           bonus = (20 * combatBonusTime).roundToInt()
         }
 
-        lastupdatedCombatTime = System.currentTimeMillis()
+        lastupdatedCombatTime = Minecraft.getSystemTime()
         combatTimer = (20 * combatPvPTime).roundToInt()
       } else {
         // COMBAT BONUS WHOAHHO
         if (probablyCombatTimer <= 0.0) {
-          lastUpdatedBonusTime = System.currentTimeMillis()
+          lastUpdatedBonusTime = Minecraft.getSystemTime()
           bonus = (20 * combatBonusTime).roundToInt()
         }
 
-        lastupdatedCombatTime = System.currentTimeMillis()
+        lastupdatedCombatTime = Minecraft.getSystemTime()
         combatTimer = (20 * combatPveTime).roundToInt()
 
         if (hideDebug) { // todo - setting debug mob
@@ -198,11 +202,11 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       if (!otherStuff.any { it == attacker }) {
         // COMBAT BONUS WHOAHHO
         if (probablyCombatTimer <= 0.0) {
-          lastUpdatedBonusTime = System.currentTimeMillis()
+          lastUpdatedBonusTime = Minecraft.getSystemTime()
           bonus = (20 * combatBonusTime).roundToInt()
         }
 
-        lastupdatedCombatTime = System.currentTimeMillis()
+        lastupdatedCombatTime = Minecraft.getSystemTime()
         combatTimer =
           if (attacker.contains(' '))
             (20 * combatPveTime).roundToInt()
@@ -222,7 +226,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   }
 
   val debugRegex =
-    Regex("""^\+[0-9]+ HP.*\[[0-9]+ HP]| *\*.*\*|[0-9]+ DMG -> .*\[[0-9]+ HP]|-[0-9]+ HP \(.*\) \[[0-9]+ HP]|-[0-9]+ HP \(.*\) \[[0-9]+]| *\* OPPONENT .*\*| *Drained Energy .*\*|Your Gem Find resulted in gems.| *\+ [0-9]+ EXP \[.*]| *\+[0-9]+G| *\+[0-9]+ (?:Logs|Planks|Clay|Ceramic|Cobblestone|Stone Brick|Grain|Bread)|You did not have room for [0-9]+ .*, so they were discarded.|\+.*|-.*""")
+    Regex("""^\+[0-9]+ HP.*\[[0-9]+ HP]| *\*.*\*|[0-9]+ DMG -> .*\[[0-9]+ HP]|-[0-9]+ HP \(.*\) \[[0-9]+ HP]|-[0-9]+ HP \(.*\) \[[0-9]+]| *\* OPPONENT .*\*| *Drained Energy .*\*|Your Gem Find resulted in gems.| *\+ [0-9]+ EXP.*\[.*]| *\+[0-9]+G| *\+[0-9]+ (?:Logs|Planks|Clay|Ceramic|Cobblestone|Stone Brick|Grain|Bread)|You did not have room for [0-9]+ .*, so they were discarded.|\+.*|-.*""")
 
   override fun getHandledPackets(): MutableList<Class<out Packet<*>>> =
     mutableListOf(
@@ -398,7 +402,9 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     val scale = scaleFactor / scaleFactor.pow(2.0)
     GlStateManager.scale(scale, scale, 1.0)
 
+//    GlStateManager.disableLighting()
     `draw energy bar and also the health bar too don't forget`()
+//    GlStateManager.enableLighting()
 
     GlStateManager.popMatrix()
   }
