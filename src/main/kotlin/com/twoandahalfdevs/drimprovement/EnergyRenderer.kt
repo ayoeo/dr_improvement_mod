@@ -88,6 +88,7 @@ fun onTick() {
   lastTick = Minecraft.getSystemTime()
 }
 
+var lastActionBarMsg = ""
 var actionBarMsg = ""
 var actionBarTime = 0
 

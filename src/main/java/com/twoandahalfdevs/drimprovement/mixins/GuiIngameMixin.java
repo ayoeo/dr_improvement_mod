@@ -2,6 +2,7 @@ package com.twoandahalfdevs.drimprovement.mixins;
 
 import com.twoandahalfdevs.drimprovement.EnergyRendererKt;
 import com.twoandahalfdevs.drimprovement.LiteModDRImprovement;
+import com.twoandahalfdevs.drimprovement.LiteModDRImprovementKt;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiIngame;
 import net.minecraft.client.gui.ScaledResolution;
@@ -27,6 +28,11 @@ public abstract class GuiIngameMixin extends Gui {
     if (LiteModDRImprovement.mod.getCreativeModeLook()) {
       ci.cancel();
     }
+  }
+
+  @Inject(method = "setOverlayMessage(Ljava/lang/String;Z)V", at = @At("HEAD"))
+  private void setOverlayMessage(String p_setOverlayMessage_1_, boolean p_setOverlayMessage_2_, CallbackInfo ci) {
+//    LiteModDRImprovement.mod.updateActionBar(p_setOverlayMessage_1_);
   }
 
   /**

@@ -2,6 +2,7 @@ package com.twoandahalfdevs.drimprovement
 
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
+import com.mojang.realmsclient.gui.ChatFormatting
 import com.mumfrey.liteloader.*
 import com.mumfrey.liteloader.core.LiteLoader
 import com.mumfrey.liteloader.core.LiteLoaderEventBroker
@@ -17,7 +18,10 @@ import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.settings.KeyBinding
 import net.minecraft.network.INetHandler
 import net.minecraft.network.Packet
+import net.minecraft.network.play.client.CPacketPlayerTryUseItem
+import net.minecraft.network.play.client.CPacketTabComplete
 import net.minecraft.network.play.server.*
+import net.minecraft.util.EnumHand
 import net.minecraft.util.EnumParticleTypes
 import net.minecraft.util.MouseHelper
 import net.minecraft.util.text.ChatType
@@ -30,6 +34,7 @@ import java.util.*
 import java.util.concurrent.Semaphore
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.time.ExperimentalTime
 
 val minecraft: Minecraft
   get() = Minecraft.getMinecraft()
@@ -51,6 +56,9 @@ private val otherStuff = listOf("THORNS", "IN FIRE", "ON FIRE", "LAVA", "FALL", 
 private const val combatBonusTime = 6.5
 
 val hideDebugKeybind = KeyBinding("Show/Hide Debug", Keyboard.KEY_O, "Dr Improvement Mod");
+
+// Wynnment
+val castSpell1 = KeyBinding("Cast Spell 1", Keyboard.KEY_NONE, "Wynncraft Improvement Mod");
 
 private val combatPveTime: Double
   get() = if (clas.contains("Rogue")) 5.2 else 8.0
@@ -136,7 +144,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   @Expose
   @SerializedName("threaded_mouse_input")
-  var threadedMouseInput = true
+  var threadedMouseInput = false
 
   companion object {
     lateinit var mod: LiteModDRImprovement
@@ -193,9 +201,9 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         lastupdatedCombatTime = Minecraft.getSystemTime()
         combatTimer = (20 * combatPveTime).roundToInt()
 
-        if (hideDebug) { // todo - setting debug mob
-          return false
-        }
+//        if (hideDebug) { // todo - setting debug mob
+//          return false
+//        }
       }
     } else if (attacker != null && attacker.isNotEmpty()) {
       // MONSTER??
@@ -213,9 +221,9 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
           else
             (20 * combatPvPTime).roundToInt()
 
-        if (hideDebug) { // todo - setting debug mob
-          return false
-        }
+//        if (hideDebug) { // todo - setting debug mob
+//          return false
+//        }
       }
     }
     return true
@@ -234,8 +242,10 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       SPacketEffect::class.java,
       SPacketUpdateBossInfo::class.java,
       SPacketUpdateScore::class.java,
-      SPacketEntityMetadata::class.java
-//      SPacketSetExperience::class.java
+      SPacketEntityMetadata::class.java,
+      SPacketTabComplete::class.java,
+      SPacketTitle::class.java,
+      SPacketChat::class.java
     )
 
   private var needsHealthUpdate = mutableMapOf<String, UpdateInfo>()
@@ -243,10 +253,16 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   data class UpdateInfo(var goodToUpdate: Boolean, val freshHealth: Int)
 
+  private var waitingForServerToGetPackets = false
+  private var serverCastProgress: Int? = null
+
+  // if (spellCastProgress != null) {
+  // stop left click and right click from working :) (we're casting a spell)
+  // }
+
   private var lastExp = 1f
   override fun handlePacket(netHandler: INetHandler?, packet: Packet<*>?): Boolean {
     if (minecraft.player == null) return true
-
 //    if (packet is SPacketSetExperience) {
 //      val exp = packet.experienceBar
 //      val usedExp = lastExp - exp
@@ -256,6 +272,23 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 //      lastExp = exp
 //      return true
 //    }
+
+    // Wynncraft stuff
+    if (packet is SPacketTabComplete) {
+      if (packet.matches.isEmpty()) {
+        waitingForServerToGetPackets = false
+        minecraft.ingameGUI.addChatMessage(
+          ChatType.CHAT,
+          TextComponentString("The server got all the packets : )")
+        )
+      }
+//    } else if (packet is SPacketTitle && spellCastProgress != null) {
+//      if (packet.type == SPacketTitle.Type.ACTIONBAR) {
+//        val msg = packet.message
+//        
+//      }
+    }
+    // Wynncraft stuff
 
     if (packet is SPacketUpdateScore) {
       if (packet.objectiveName != "health") {
@@ -339,6 +372,17 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     return true
   }
 
+  private var spellType: SpellType? = null
+  private var castingProgress: Int? = null
+  private var extraDelay = 0
+
+  enum class SpellType {
+    RRR,
+    RLR,
+    RLL,
+    RRL
+  }
+
   override fun onTick(
     minecraft: Minecraft?,
     partialTicks: Float,
@@ -350,6 +394,10 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       actionBarTime = 0
     }
 
+    // Wynn spell stuff
+
+    // Wynn spell stuff
+
     if (inGame && minecraft?.currentScreen == null) {
       if (hideDebugKeybind.isPressed) {
         hideDebug = !hideDebug
@@ -359,7 +407,63 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
           TextComponentString("§7[Debug]: ${if (hideDebug) "§cHidden" else "§aShown"}§7.")
         )
       }
+
+      if (castSpell1.isPressed) {
+        minecraft?.ingameGUI?.addChatMessage(
+          ChatType.CHAT,
+          TextComponentString("Nice spell cast 1 you weirdo")
+        )
+
+        spellType = SpellType.RRR
+        castingProgress = 0
+        serverCastProgress = 0
+      }
     }
+
+    if (extraDelay > 0) {
+      extraDelay--
+    } else {
+      when (castingProgress) {
+        0 -> {
+          when (spellType!!) {
+            SpellType.RRR -> extraDelay = 1
+            SpellType.RLR -> TODO()
+            SpellType.RLL -> TODO()
+            SpellType.RRL -> TODO()
+          }
+          minecraft?.player?.connection?.sendPacket(CPacketPlayerTryUseItem(EnumHand.MAIN_HAND))
+          castingProgress = 1
+        }
+        1 -> {
+          minecraft?.player?.connection?.sendPacket(CPacketPlayerTryUseItem(EnumHand.MAIN_HAND))
+          castingProgress = 2
+        }
+        2 -> {
+          minecraft?.player?.connection?.sendPacket(CPacketPlayerTryUseItem(EnumHand.MAIN_HAND))
+
+          // Tell the server we're done
+          waitingForServerToGetPackets = true
+          minecraft?.player?.connection?.sendPacket(CPacketTabComplete("/_", null, false))
+          castingProgress = 3
+        }
+        3 -> {
+          // The spell should have cast by now...
+          if (!waitingForServerToGetPackets && serverCastProgress != null) {
+            minecraft?.ingameGUI?.addChatMessage(
+              ChatType.CHAT,
+              TextComponentString("The spell should have cast by now but it hasn't...")
+            )
+            // TODO - either left click or right click based on server spell progress
+            castingProgress = 2
+          }
+        }
+      }
+    }
+//    minecraft?.player?.connection?.sendPacket(
+//      CPacketPlayerDigging(
+//        CPacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, EnumFacing.DOWN
+//      )
+//    )
 
     if (clock && minecraft?.player != null) {
       onTick()
@@ -431,10 +535,13 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   val pollingSemaphore = Semaphore(1)
 
   private var wasThreaded = threadedMouseInput
+
+  @UseExperimental(ExperimentalTime::class)
   override fun init(configPath: File?) {
     mod = this
 
     LiteLoader.getInput().registerKeyBinding(hideDebugKeybind)
+    LiteLoader.getInput().registerKeyBinding(castSpell1)
 
     Minecraft.getMinecraft().mouseHelper = if (threadedMouseInput) {
       RawMouseHelper()
@@ -443,6 +550,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     }
 
     val inputThread = Thread {
+      var missedMoves = 0
       while (true) {
         if (wasThreaded && !threadedMouseInput) {
           minecraft.mouseHelper = MouseHelper()
@@ -459,6 +567,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         }
 
         if (mice.isEmpty()) {
+          missedMoves = 0
           println("rescanning")
           try {
             val controllers: Array<Controller> = createDefaultEnvironment()!!.controllers
@@ -468,14 +577,41 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
           } catch (ignored: ReflectiveOperationException) {
           }
         } else {
-          mice.forEach { mouse ->
-            mouse.poll()
+          org.lwjgl.input.Mouse.poll()
+          val couldHaveMissed =
+            org.lwjgl.input.Mouse.getDX() != 0 || org.lwjgl.input.Mouse.getDY() != 0
+          var missed = true
+
+
+          for (mouse in mice.toList()) {
             pollingSemaphore.acquire()
-            if (minecraft.inGameHasFocus) {
-              dx += mouse.x.pollData.toInt()
-              dy += mouse.y.pollData.toInt()
+            if (mouse.poll()) {
+              val x = mouse.x.pollData.toInt()
+              val y = mouse.y.pollData.toInt()
+              if (x != 0 || y != 0) {
+                missed = false
+              }
+              if (minecraft.inGameHasFocus) {
+                dx += x
+                dy += y
+              }
+            } else {
+              println("Device removed? let's try again")
+              mice.clear()
             }
             pollingSemaphore.release()
+          }
+
+          if (!missed && couldHaveMissed) {
+            missedMoves = 0
+          }
+
+          if (missed && couldHaveMissed) {
+            missedMoves += 1
+          }
+
+          if (missedMoves > 1000) {
+            mice.clear()
           }
         }
 
@@ -488,5 +624,29 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     inputThread.name = "inputThread"
     inputThread.priority = Thread.MAX_PRIORITY
     inputThread.start()
+  }
+
+  private val abilityRegex = Regex("""❤.*[RL]-([RL?])-([RL?]).*""")
+
+  fun updateActionBar(bar: String) {
+    val msg = ChatFormatting.stripFormatting(bar)
+    val match = abilityRegex.find(msg)?.groupValues
+    if (serverCastProgress != null && match != null && match.size == 3) {
+      serverCastProgress = if (match[1] == "?") 0 else 1 + if (match[2] == "?") 0 else 1
+
+      minecraft.ingameGUI.addChatMessage(
+        ChatType.CHAT,
+        TextComponentString("any gaming: $serverCastProgress")
+      )
+
+      if (serverCastProgress == 2) {
+        minecraft.ingameGUI.addChatMessage(
+          ChatType.CHAT,
+          TextComponentString("very nice the spell has been cast : )")
+        )
+        serverCastProgress = null
+        waitingForServerToGetPackets = false
+      }
+    }
   }
 }

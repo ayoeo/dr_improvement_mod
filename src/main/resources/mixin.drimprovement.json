@@ -13,6 +13,7 @@
     "ItemModelGeneratorMixin",
     "ItemRendererMixin",
     "ItemStackMixin",
-    "MinecraftMixin"
+    "MinecraftMixin",
+    "NetHandlerPlayClientMixin"
   ]
 }
