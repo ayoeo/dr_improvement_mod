@@ -16,6 +16,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.settings.KeyBinding
+import net.minecraft.entity.monster.EntitySpellcasterIllager
 import net.minecraft.network.INetHandler
 import net.minecraft.network.Packet
 import net.minecraft.network.play.client.CPacketPlayerTryUseItem
@@ -56,9 +57,6 @@ private val otherStuff = listOf("THORNS", "IN FIRE", "ON FIRE", "LAVA", "FALL", 
 private const val combatBonusTime = 6.5
 
 val hideDebugKeybind = KeyBinding("Show/Hide Debug", Keyboard.KEY_O, "Dr Improvement Mod");
-
-// Wynnment
-val castSpell1 = KeyBinding("Cast Spell 1", Keyboard.KEY_NONE, "Wynncraft Improvement Mod");
 
 private val combatPveTime: Double
   get() = if (clas.contains("Rogue")) 5.2 else 8.0
@@ -253,13 +251,6 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   data class UpdateInfo(var goodToUpdate: Boolean, val freshHealth: Int)
 
-  private var waitingForServerToGetPackets = false
-  private var serverCastProgress: Int? = null
-
-  // if (spellCastProgress != null) {
-  // stop left click and right click from working :) (we're casting a spell)
-  // }
-
   private var lastExp = 1f
   override fun handlePacket(netHandler: INetHandler?, packet: Packet<*>?): Boolean {
     if (minecraft.player == null) return true
@@ -272,23 +263,6 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 //      lastExp = exp
 //      return true
 //    }
-
-    // Wynncraft stuff
-    if (packet is SPacketTabComplete) {
-      if (packet.matches.isEmpty()) {
-        waitingForServerToGetPackets = false
-        minecraft.ingameGUI.addChatMessage(
-          ChatType.CHAT,
-          TextComponentString("The server got all the packets : )")
-        )
-      }
-//    } else if (packet is SPacketTitle && spellCastProgress != null) {
-//      if (packet.type == SPacketTitle.Type.ACTIONBAR) {
-//        val msg = packet.message
-//        
-//      }
-    }
-    // Wynncraft stuff
 
     if (packet is SPacketUpdateScore) {
       if (packet.objectiveName != "health") {
@@ -372,17 +346,6 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     return true
   }
 
-  private var spellType: SpellType? = null
-  private var castingProgress: Int? = null
-  private var extraDelay = 0
-
-  enum class SpellType {
-    RRR,
-    RLR,
-    RLL,
-    RRL
-  }
-
   override fun onTick(
     minecraft: Minecraft?,
     partialTicks: Float,
@@ -394,10 +357,6 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       actionBarTime = 0
     }
 
-    // Wynn spell stuff
-
-    // Wynn spell stuff
-
     if (inGame && minecraft?.currentScreen == null) {
       if (hideDebugKeybind.isPressed) {
         hideDebug = !hideDebug
@@ -407,63 +366,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
           TextComponentString("§7[Debug]: ${if (hideDebug) "§cHidden" else "§aShown"}§7.")
         )
       }
-
-      if (castSpell1.isPressed) {
-        minecraft?.ingameGUI?.addChatMessage(
-          ChatType.CHAT,
-          TextComponentString("Nice spell cast 1 you weirdo")
-        )
-
-        spellType = SpellType.RRR
-        castingProgress = 0
-        serverCastProgress = 0
-      }
     }
-
-    if (extraDelay > 0) {
-      extraDelay--
-    } else {
-      when (castingProgress) {
-        0 -> {
-          when (spellType!!) {
-            SpellType.RRR -> extraDelay = 1
-            SpellType.RLR -> TODO()
-            SpellType.RLL -> TODO()
-            SpellType.RRL -> TODO()
-          }
-          minecraft?.player?.connection?.sendPacket(CPacketPlayerTryUseItem(EnumHand.MAIN_HAND))
-          castingProgress = 1
-        }
-        1 -> {
-          minecraft?.player?.connection?.sendPacket(CPacketPlayerTryUseItem(EnumHand.MAIN_HAND))
-          castingProgress = 2
-        }
-        2 -> {
-          minecraft?.player?.connection?.sendPacket(CPacketPlayerTryUseItem(EnumHand.MAIN_HAND))
-
-          // Tell the server we're done
-          waitingForServerToGetPackets = true
-          minecraft?.player?.connection?.sendPacket(CPacketTabComplete("/_", null, false))
-          castingProgress = 3
-        }
-        3 -> {
-          // The spell should have cast by now...
-          if (!waitingForServerToGetPackets && serverCastProgress != null) {
-            minecraft?.ingameGUI?.addChatMessage(
-              ChatType.CHAT,
-              TextComponentString("The spell should have cast by now but it hasn't...")
-            )
-            // TODO - either left click or right click based on server spell progress
-            castingProgress = 2
-          }
-        }
-      }
-    }
-//    minecraft?.player?.connection?.sendPacket(
-//      CPacketPlayerDigging(
-//        CPacketPlayerDigging.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, EnumFacing.DOWN
-//      )
-//    )
 
     if (clock && minecraft?.player != null) {
       onTick()
@@ -506,9 +409,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     val scale = scaleFactor / scaleFactor.pow(2.0)
     GlStateManager.scale(scale, scale, 1.0)
 
-//    GlStateManager.disableLighting()
     `draw energy bar and also the health bar too don't forget`()
-//    GlStateManager.enableLighting()
 
     GlStateManager.popMatrix()
   }
@@ -536,12 +437,10 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   private var wasThreaded = threadedMouseInput
 
-  @UseExperimental(ExperimentalTime::class)
   override fun init(configPath: File?) {
     mod = this
 
     LiteLoader.getInput().registerKeyBinding(hideDebugKeybind)
-    LiteLoader.getInput().registerKeyBinding(castSpell1)
 
     Minecraft.getMinecraft().mouseHelper = if (threadedMouseInput) {
       RawMouseHelper()
@@ -624,29 +523,5 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     inputThread.name = "inputThread"
     inputThread.priority = Thread.MAX_PRIORITY
     inputThread.start()
-  }
-
-  private val abilityRegex = Regex("""❤.*[RL]-([RL?])-([RL?]).*""")
-
-  fun updateActionBar(bar: String) {
-    val msg = ChatFormatting.stripFormatting(bar)
-    val match = abilityRegex.find(msg)?.groupValues
-    if (serverCastProgress != null && match != null && match.size == 3) {
-      serverCastProgress = if (match[1] == "?") 0 else 1 + if (match[2] == "?") 0 else 1
-
-      minecraft.ingameGUI.addChatMessage(
-        ChatType.CHAT,
-        TextComponentString("any gaming: $serverCastProgress")
-      )
-
-      if (serverCastProgress == 2) {
-        minecraft.ingameGUI.addChatMessage(
-          ChatType.CHAT,
-          TextComponentString("very nice the spell has been cast : )")
-        )
-        serverCastProgress = null
-        waitingForServerToGetPackets = false
-      }
-    }
   }
 }

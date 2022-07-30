@@ -11,11 +11,4 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(NetHandlerPlayClient.class)
 public class NetHandlerPlayClientMixin {
-  @Inject(method = "handleChat", at = @At("HEAD"))
-  private void handleTitle(SPacketChat packet, CallbackInfo ci) {
-    
-    if (packet.getType() == ChatType.GAME_INFO) {
-      LiteModDRImprovement.mod.updateActionBar(packet.getChatComponent().getUnformattedText());
-    }
-  }
 }
