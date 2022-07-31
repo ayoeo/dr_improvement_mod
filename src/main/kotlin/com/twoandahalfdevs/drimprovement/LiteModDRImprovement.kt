@@ -9,6 +9,7 @@ import com.mumfrey.liteloader.core.LiteLoaderEventBroker
 import com.mumfrey.liteloader.modconfig.ConfigPanel
 import com.mumfrey.liteloader.modconfig.ConfigStrategy
 import com.mumfrey.liteloader.modconfig.ExposableOptions
+import com.twoandahalfdevs.drimprovement.LiteModDRImprovement.Companion.mod
 import net.java.games.input.Controller
 import net.java.games.input.ControllerEnvironment
 import net.java.games.input.Mouse
@@ -17,6 +18,7 @@ import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.settings.KeyBinding
 import net.minecraft.entity.monster.EntitySpellcasterIllager
+import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.network.INetHandler
 import net.minecraft.network.Packet
 import net.minecraft.network.play.client.CPacketPlayerTryUseItem
@@ -29,6 +31,7 @@ import net.minecraft.util.text.ChatType
 import net.minecraft.util.text.ITextComponent
 import net.minecraft.util.text.TextComponentString
 import org.lwjgl.input.Keyboard
+import sun.audio.AudioPlayer.player
 import java.io.File
 import java.lang.reflect.Constructor
 import java.util.*
@@ -246,7 +249,9 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       SPacketChat::class.java
     )
 
-  private var needsHealthUpdate = mutableMapOf<String, UpdateInfo>()
+  private var scoreWasUpdated = mutableMapOf<String, Int>()
+  private var latestCurrentHealth = mutableMapOf<String, Float>()
+
   private var maxHealthValues = mutableMapOf<String, Int>()
 
   data class UpdateInfo(var goodToUpdate: Boolean, val freshHealth: Int)
@@ -269,7 +274,19 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         return true
       }
 
-      needsHealthUpdate[packet.playerName] = UpdateInfo(false, packet.scoreValue)
+      scoreWasUpdated[packet.playerName] = packet.scoreValue
+
+      // In case the player is under 5% health, we need to display SOME info
+      val player = minecraft.world.playerEntities.find { it.name == packet.playerName }
+      val maxHealth = maxHealthValues[packet.playerName]
+      if (maxHealth != null) {
+        player?.health = (packet.scoreValue.toFloat() * 20f) / maxHealth.toFloat()
+      }
+
+      // We have to wait for an update haha
+      latestCurrentHealth.remove(packet.playerName)
+
+      // TODO - just update the score when we get some debug haha
       return false
     }
 
@@ -336,9 +353,13 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     } else if (packet is SPacketEntityMetadata) {
       // TODO - update player health over head : o
       val player = minecraft.world.getEntityByID(packet.entityId)
-      if (player != null) {
-        needsHealthUpdate[player.name]?.let {
-          it.goodToUpdate = true
+      if (player is EntityPlayer) {
+        val packetHealth = packet.dataManagerEntries.find { it.key.id == 7 }?.value as Float?
+        // 1.0 isn't a real health it's just like nothing like it means literally nothing it just means
+        //  they're below 5% health it's useless I swear to god I hate this game it doesn't make any sense I just want it to make sense
+        if (packetHealth != null && packetHealth != 1.0f) {
+          // Update the health now : )
+          latestCurrentHealth[player.name] = packetHealth
         }
       }
     }
@@ -372,14 +393,12 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       onTick()
 
       // Update health
-      needsHealthUpdate = needsHealthUpdate.filter { (name, updateInfo) ->
+      scoreWasUpdated = scoreWasUpdated.filter { (name, score) ->
         val player = minecraft.world.getPlayerEntityByName(name)
-        if (player != null && updateInfo.goodToUpdate) {
-          if (player.health > 20.0) {
-//            println("Abil: ${player.health}, ${player.maxHealth}, ${updateInfo.freshHealth}")
-          }
-          val ratio = player.maxHealth / player.health
-          val maxHealth = updateInfo.freshHealth.toDouble() * ratio
+        val latestCurrentHealth = latestCurrentHealth[name]
+        if (player != null && latestCurrentHealth != null) {
+          val ratio = player.maxHealth / latestCurrentHealth
+          val maxHealth = score.toDouble() * ratio
           maxHealthValues[player.name] = maxHealth.roundToInt()
           false
         } else {
@@ -453,10 +472,8 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       while (true) {
         if (wasThreaded && !threadedMouseInput) {
           minecraft.mouseHelper = MouseHelper()
-          println("Turning off threaded input")
         } else if (!wasThreaded && threadedMouseInput) {
           minecraft.mouseHelper = RawMouseHelper()
-          println("Turning on threaded input")
         }
         wasThreaded = threadedMouseInput
 
@@ -467,7 +484,6 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
         if (mice.isEmpty()) {
           missedMoves = 0
-          println("rescanning")
           try {
             val controllers: Array<Controller> = createDefaultEnvironment()!!.controllers
             for (controller in controllers.filter { it.type == Controller.Type.MOUSE }) {
@@ -495,7 +511,6 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
                 dy += y
               }
             } else {
-              println("Device removed? let's try again")
               mice.clear()
             }
             pollingSemaphore.release()
