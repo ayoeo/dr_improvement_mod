@@ -204,7 +204,7 @@ class DRImprovementConfigPanel : AbstractConfigPanel() {
     this.addControl(button) {
       LiteModDRImprovement.mod.rapidMousePolling = !LiteModDRImprovement.mod.rapidMousePolling
       it.displayString =
-        "Rapid Mouse Polling: ${LiteModDRImprovement.mod.rapidMousePolling} (req. threaded input) (trade 1 cpu core for <0.5ms latency lmao I'm turning it on idk about you)"
+        "Rapid Mouse Polling: ${LiteModDRImprovement.mod.rapidMousePolling}"
     }
 
     this.addControl(
@@ -233,6 +233,34 @@ class DRImprovementConfigPanel : AbstractConfigPanel() {
         !LiteModDRImprovement.mod.preventHotbarScrolling
       it.displayString =
         "Prevent Hotbar Scrolling: ${LiteModDRImprovement.mod.preventHotbarScrolling}"
+    }
+
+    this.addControl(
+      GuiButton(
+        0,
+        0,
+        540,
+        "Show Flame Particles: ${LiteModDRImprovement.mod.showFlameParticles}"
+      )
+    ) {
+      LiteModDRImprovement.mod.showFlameParticles =
+        !LiteModDRImprovement.mod.showFlameParticles
+      it.displayString =
+        "Show Flame Particles: ${LiteModDRImprovement.mod.showFlameParticles}"
+    }
+
+    this.addControl(
+      GuiButton(
+        0,
+        0,
+        570,
+        "Show Chest Particles: ${LiteModDRImprovement.mod.showChestParticles}"
+      )
+    ) {
+      LiteModDRImprovement.mod.showChestParticles =
+        !LiteModDRImprovement.mod.showChestParticles
+      it.displayString =
+        "Show Chest Particles: ${LiteModDRImprovement.mod.showChestParticles}"
     }
   }
 }

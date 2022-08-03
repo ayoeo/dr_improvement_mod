@@ -128,6 +128,18 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   var hideDebug = false
 
   @Expose
+  @SerializedName("show_flame_particles")
+  var showFlameParticles = false
+
+  @Expose
+  @SerializedName("show_cleave_particles")
+  var showCleaveParticles = false
+
+  @Expose
+  @SerializedName("show_chest_particles")
+  var showChestParticles = false
+
+  @Expose
   @SerializedName("show_extra_lore")
   var showExtraLore = true
 
@@ -335,8 +347,11 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         || packet.particleType == EnumParticleTypes.WATER_WAKE
         || packet.particleType == EnumParticleTypes.WATER_SPLASH
 
-      // For red
-//        || packet.particleType == EnumParticleTypes.SWEEP_ATTACK
+        || showFlameParticles && packet.particleType == EnumParticleTypes.FLAME
+        || showChestParticles && packet.particleType == EnumParticleTypes.ENCHANTMENT_TABLE
+
+        // For red
+        || showCleaveParticles && packet.particleType == EnumParticleTypes.SWEEP_ATTACK
       ) {
         return true
       }
@@ -399,7 +414,9 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         if (player != null && latestCurrentHealth != null) {
           val ratio = player.maxHealth / latestCurrentHealth
           val maxHealth = score.toDouble() * ratio
-          maxHealthValues[player.name] = maxHealth.roundToInt()
+          if (!maxHealth.isNaN()) {
+            maxHealthValues[player.name] = maxHealth.roundToInt()
+          }
           false
         } else {
           true
