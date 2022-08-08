@@ -31,6 +31,7 @@ import net.minecraft.util.text.ChatType
 import net.minecraft.util.text.ITextComponent
 import net.minecraft.util.text.TextComponentString
 import org.lwjgl.input.Keyboard
+import org.lwjgl.opengl.Display
 import sun.audio.AudioPlayer.player
 import java.io.File
 import java.lang.reflect.Constructor
@@ -126,6 +127,10 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   @Expose
   @SerializedName("hide_mob_debug")
   var hideDebug = false
+
+  @Expose
+  @SerializedName("show_particles")
+  var showParticles = true
 
   @Expose
   @SerializedName("show_flame_particles")
@@ -259,6 +264,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       SPacketTabComplete::class.java,
       SPacketTitle::class.java,
       SPacketChat::class.java
+      //, SPacketSetExperience::class.java
     )
 
   private var scoreWasUpdated = mutableMapOf<String, Int>()
@@ -268,7 +274,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   data class UpdateInfo(var goodToUpdate: Boolean, val freshHealth: Int)
 
-  private var lastExp = 1f
+  //  private var lastExp = 1f
   override fun handlePacket(netHandler: INetHandler?, packet: Packet<*>?): Boolean {
     if (minecraft.player == null) return true
 //    if (packet is SPacketSetExperience) {
@@ -291,7 +297,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       // In case the player is under 5% health, we need to display SOME info
       val player = minecraft.world.playerEntities.find { it.name == packet.playerName }
       val maxHealth = maxHealthValues[packet.playerName]
-      if (maxHealth != null) {
+      if (maxHealth != null && player != minecraft.player) {
         player?.health = (packet.scoreValue.toFloat() * 20f) / maxHealth.toFloat()
       }
 
@@ -337,6 +343,8 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     }
 
     if (packet is SPacketParticles) {
+      if (showParticles) return true
+
       if (
       // Elites and stuff idk
         packet.particleType == EnumParticleTypes.EXPLOSION_NORMAL
@@ -547,7 +555,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
         }
 
         // Now we wait (or do we)
-        if (!rapidMousePolling) {
+        if (!rapidMousePolling || !Display.isActive()) {
           Thread.sleep(1)
         }
       }

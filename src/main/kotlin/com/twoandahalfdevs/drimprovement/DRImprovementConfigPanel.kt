@@ -262,5 +262,19 @@ class DRImprovementConfigPanel : AbstractConfigPanel() {
       it.displayString =
         "Show Chest Particles: ${LiteModDRImprovement.mod.showChestParticles}"
     }
+
+    this.addControl(
+      GuiButton(
+        0,
+        0,
+        600,
+        "Show Particles: ${LiteModDRImprovement.mod.showParticles}"
+      )
+    ) {
+      LiteModDRImprovement.mod.showParticles =
+        !LiteModDRImprovement.mod.showParticles
+      it.displayString =
+        "Show Particles: ${LiteModDRImprovement.mod.showParticles}"
+    }
   }
 }
