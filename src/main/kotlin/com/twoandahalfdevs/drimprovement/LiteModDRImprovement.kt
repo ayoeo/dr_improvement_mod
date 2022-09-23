@@ -2,14 +2,13 @@ package com.twoandahalfdevs.drimprovement
 
 import com.google.gson.annotations.Expose
 import com.google.gson.annotations.SerializedName
-import com.mojang.realmsclient.gui.ChatFormatting
 import com.mumfrey.liteloader.*
 import com.mumfrey.liteloader.core.LiteLoader
 import com.mumfrey.liteloader.core.LiteLoaderEventBroker
 import com.mumfrey.liteloader.modconfig.ConfigPanel
 import com.mumfrey.liteloader.modconfig.ConfigStrategy
 import com.mumfrey.liteloader.modconfig.ExposableOptions
-import com.twoandahalfdevs.drimprovement.LiteModDRImprovement.Companion.mod
+import com.twoandahalfdevs.drimprovement.mixins.NetworkManagerMixin
 import net.java.games.input.Controller
 import net.java.games.input.ControllerEnvironment
 import net.java.games.input.Mouse
@@ -17,14 +16,11 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.ScaledResolution
 import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.settings.KeyBinding
-import net.minecraft.entity.monster.EntitySpellcasterIllager
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.network.INetHandler
 import net.minecraft.network.Packet
-import net.minecraft.network.play.client.CPacketPlayerTryUseItem
-import net.minecraft.network.play.client.CPacketTabComplete
+import net.minecraft.network.play.client.CPacketClientSettings
 import net.minecraft.network.play.server.*
-import net.minecraft.util.EnumHand
 import net.minecraft.util.EnumParticleTypes
 import net.minecraft.util.MouseHelper
 import net.minecraft.util.text.ChatType
@@ -32,14 +28,12 @@ import net.minecraft.util.text.ITextComponent
 import net.minecraft.util.text.TextComponentString
 import org.lwjgl.input.Keyboard
 import org.lwjgl.opengl.Display
-import sun.audio.AudioPlayer.player
 import java.io.File
 import java.lang.reflect.Constructor
 import java.util.*
 import java.util.concurrent.Semaphore
 import kotlin.math.pow
 import kotlin.math.roundToInt
-import kotlin.time.ExperimentalTime
 
 val minecraft: Minecraft
   get() = Minecraft.getMinecraft()
@@ -166,7 +160,11 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   companion object {
     lateinit var mod: LiteModDRImprovement
+
+    @JvmStatic
+    var latestSettings: CPacketClientSettings? = null
   }
+
 
   override fun upgradeSettings(v: String?, c: File?, o: File?) {}
 
@@ -311,7 +309,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     if (packet is SPacketUpdateBossInfo) {
       val text = packet.name?.unformattedText ?: return true
 
-      if (text.startsWith("LV. ")) {
+      if (text.startsWith("Lv ")) {
         healthBarUUID = packet.uniqueId
       }
 
@@ -390,6 +388,7 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
     return true
   }
 
+
   override fun onTick(
     minecraft: Minecraft?,
     partialTicks: Float,
@@ -410,6 +409,10 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
           TextComponentString("§7[Debug]: ${if (hideDebug) "§cHidden" else "§aShown"}§7.")
         )
       }
+    }
+
+    if (minecraft?.player != null && minecraft.player!!.ticksExisted % 20 == 0 && latestSettings != null) {
+      minecraft.connection?.sendPacket(latestSettings)
     }
 
     if (clock && minecraft?.player != null) {

@@ -19,6 +19,9 @@ fun ShaderLoader.shader(): Int {
 var lastHpPercent: Float = 0f
 var hpPercent: Float = 0f
 
+var lastManaPercent: Float = 0f
+var manaPercent: Float = 0f
+
 var lastExperience: Float = 0f
 var currentExp: Float = 0f
 
@@ -48,12 +51,13 @@ val displayHeight
   get() = minecraft.displayHeight
 
 private val colourBase = GLUniform.Colour(GL20.glGetUniformLocation(program, "colourBase"))
+private val colourEnergy = GLUniform.Colour(GL20.glGetUniformLocation(program, "colourEnergy"))
 
 private val colourHpBase = GLUniform.Colour(GL20.glGetUniformLocation(program, "colourHpBase"))
-
 private val colourHp = GLUniform.Colour(GL20.glGetUniformLocation(program, "colourHp"))
 
-private val colourEnergy = GLUniform.Colour(GL20.glGetUniformLocation(program, "colourEnergy"))
+private val colourManaBase = GLUniform.Colour(GL20.glGetUniformLocation(program, "colourManaBase"))
+private val colourMana = GLUniform.Colour(GL20.glGetUniformLocation(program, "colourMana"))
 
 private val circleCenter = GLUniform.Vec2(GL20.glGetUniformLocation(program, "circleCenter"))
 
@@ -67,6 +71,8 @@ private val yOffset = GLUniform.Float(GL20.glGetUniformLocation(program, "yOffse
 private val resolution = GLUniform.Vec2(GL20.glGetUniformLocation(program, "resolution"))
 
 private val energyPercent = GLUniform.Float(GL20.glGetUniformLocation(program, "energyPercent"))
+private val manaPercentUniform =
+  GLUniform.Float(GL20.glGetUniformLocation(program, "manaPercent"))
 
 private var lastTick = Minecraft.getSystemTime()
 
@@ -81,6 +87,10 @@ fun onTick() {
   if (currentExp == 0f) currentExp = minecraft.player?.experience ?: 0f
   lastExperience = currentExp
   currentExp = minecraft.player?.experience ?: 0f
+
+  if (manaPercent == 0f) manaPercent = (minecraft.player?.experienceLevel?.toFloat() ?: 0f) / 100f
+  lastManaPercent = manaPercent
+  manaPercent = (minecraft.player?.experienceLevel?.toFloat() ?: 0f) / 100f
 
   lastHpPercent = hpPercent
   hpPercent = (minecraft.player?.health ?: 0f) / 20f
@@ -98,8 +108,8 @@ var bonus = 0
 var lastUpdatedBonusTime = Minecraft.getSystemTime()
 var lastupdatedCombatTime = Minecraft.getSystemTime()
 
-private var pots = 10
-private var totalPots = 0
+//private var pots = 10
+//private var totalPots = 0
 var combatTimer = 0
 
 private val cdreg = """Cooldown: \[(?:([0-9]*)m)? ?(?:([0-9]*)s)?]""".toRegex()
@@ -130,7 +140,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
   // Cooldown
   if (actionBarTime > 0) {
     val cdMatches = cdreg.find(actionBarMsg)
-    val potMatches = potreg.find(actionBarMsg)
+//    val potMatches = potreg.find(actionBarMsg)
     if (cdMatches != null) {
       try {
         val min = cdMatches.groupValues.getOrNull(1)
@@ -142,9 +152,9 @@ fun `draw energy bar and also the health bar too don't forget`() {
       } catch (e: NumberFormatException) {
       }
     }
-    if (potMatches != null) {
-      pots = potMatches.groupValues.getOrNull(1)?.toInt() ?: 0
-    }
+//    if (potMatches != null) {
+//      pots = potMatches.groupValues.getOrNull(1)?.toInt() ?: 0
+//    }
 
     val combatMatches = combreg.find(actionBarMsg)
 
@@ -163,9 +173,9 @@ fun `draw energy bar and also the health bar too don't forget`() {
     }
   }
 
-  totalPots = minecraft.player.inventory.mainInventory.count {
-    Item.getIdFromItem(it.item) == 373 || Item.getIdFromItem(it.item) == 438
-  }
+//  totalPots = minecraft.player.inventory.mainInventory.count {
+//    Item.getIdFromItem(it.item) == 373 || Item.getIdFromItem(it.item) == 438
+//  }
 
   val probablyTheCoolDownNow =
     (cd - (Minecraft.getSystemTime() - lastUpdatedCdTime) / 1000).coerceAtLeast(0)
@@ -180,26 +190,26 @@ fun `draw energy bar and also the health bar too don't forget`() {
       0.0
     )
 
-  val cdStr = if (probablyTheCoolDownNow > 0) "§c${probablyTheCoolDownNow}s" else "§aReady"
+//  val cdStr = if (probablyTheCoolDownNow > 0) "§c${probablyTheCoolDownNow}s" else "§aReady"
 
   if (LiteModDRImprovement.mod.showHelpfulText) {
-    minecraft.fontRenderer.drawStringWithShadow(
-      cdStr,
-      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(cdStr) / 2 - LiteModDRImprovement.mod.textXOffset,
-      ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
-      0xFFFFFFFF.toInt()
-    )
-    var color = "§c"
-    val usablePots = pots.coerceAtMost(totalPots)
-    if (usablePots > 6) color = "§a"
-    else if (usablePots > 3) color = "§e"
-    val potsStr = "${color}$usablePots / $totalPots"
-    minecraft.fontRenderer.drawStringWithShadow(
-      potsStr,
-      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(potsStr) / 2 + LiteModDRImprovement.mod.textXOffset,
-      ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
-      0xFFFFFFFF.toInt()
-    )
+//    minecraft.fontRenderer.drawStringWithShadow(
+//      cdStr,
+//      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(cdStr) / 2,
+//      ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
+//      0xFFFFFFFF.toInt()
+//    )
+//    var color = "§c"
+//    val usablePots = pots.coerceAtMost(totalPots)
+//    if (usablePots > 6) color = "§a"
+//    else if (usablePots > 3) color = "§e"
+//    val potsStr = "${color}$usablePots / $totalPots"
+//    minecraft.fontRenderer.drawStringWithShadow(
+//      potsStr,
+//      xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(potsStr) / 2 + LiteModDRImprovement.mod.textXOffset,
+//      ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
+//      0xFFFFFFFF.toInt()
+//    )
 
     val combatstr = if (probablyCombatTimer > 0) "§c${
       probablyCombatTimer.toBigDecimal().setScale(1, RoundingMode.UP).toDouble()
@@ -210,7 +220,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
           "Rogue"
         )
       ) LiteModDRImprovement.mod.textXOffset - 8 else 0),
-      ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
+      ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
       0xFFFFFFFF.toInt()
     )
 
@@ -227,7 +237,7 @@ fun `draw energy bar and also the health bar too don't forget`() {
       minecraft.fontRenderer.drawStringWithShadow(
         bonusStr,
         xcenter.toFloat() - minecraft.fontRenderer.getStringWidth(combatstr) / 2 - (LiteModDRImprovement.mod.textXOffset - 8),
-        ycenter.toFloat() + LiteModDRImprovement.mod.textYOffset,
+        ycenter.toFloat() - LiteModDRImprovement.mod.textYOffset,
         0xFFFFFFFF.toInt()
       )
     }
@@ -259,11 +269,23 @@ fun `draw energy bar and also the health bar too don't forget`() {
       currentExp
     }
   energyPercent.set(interpolatedExperience)
+
+  val interpolatedMana =
+    if (LiteModDRImprovement.mod.interpolateEnergy) {
+      lastManaPercent + (manaPercent - lastManaPercent) * partial
+    } else {
+      manaPercent
+    }
+  manaPercentUniform.set(interpolatedMana)
+
   resolution.set(displayWidth.toFloat(), displayHeight.toFloat())
 
-// TODO - configuration
+  // TODO - configuration
   colourBase.set(Colour.hex(0xB8291F))
   colourEnergy.set(Colour.hex(0x21DB87))
+
+  colourManaBase.set(Colour.hex(0xB8291F))
+  colourMana.set(Colour.hex(0x3AB3FF))
 
   colourHpBase.set(Colour.hex(0xC70000))
   colourHp.set(Colour.hex(0x2DD248))
