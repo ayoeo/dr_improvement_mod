@@ -158,6 +158,10 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   @SerializedName("threaded_mouse_input")
   var threadedMouseInput = false
 
+  @Expose
+  @SerializedName("no_hurt_cam")
+  var noHurtCam = false
+
   companion object {
     lateinit var mod: LiteModDRImprovement
 

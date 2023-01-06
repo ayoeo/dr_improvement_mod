@@ -65,8 +65,8 @@ private val healthPercent = GLUniform.Float(GL20.glGetUniformLocation(program, "
 
 private val showHealthBar = GLUniform.Float(GL20.glGetUniformLocation(program, "showHealth"))
 private val showEnergyBar = GLUniform.Float(GL20.glGetUniformLocation(program, "showEnergy"))
-private val barWidth = GLUniform.Float(GL20.glGetUniformLocation(program, "barWidth"))
-private val yOffset = GLUniform.Float(GL20.glGetUniformLocation(program, "yOffset"))
+//private val barWidth = GLUniform.Float(GL20.glGetUniformLocation(program, "barWidth"))
+//private val yOffset = GLUniform.Float(GL20.glGetUniformLocation(program, "yOffset"))
 
 private val resolution = GLUniform.Vec2(GL20.glGetUniformLocation(program, "resolution"))
 
@@ -295,8 +295,8 @@ fun `draw energy bar and also the health bar too don't forget`() {
 
   showHealthBar.set(if (LiteModDRImprovement.mod.showHealthBar) 1f else 0f)
   showEnergyBar.set(if (LiteModDRImprovement.mod.showEnergyBar) 1f else 0f)
-  barWidth.set(LiteModDRImprovement.mod.energyBarWidth)
-  yOffset.set(LiteModDRImprovement.mod.energyBarOffset)
+//  barWidth.set(LiteModDRImprovement.mod.energyBarWidth)
+//  yOffset.set(LiteModDRImprovement.mod.energyBarOffset)
 
   val (centerX, centerY) = Pair(displayWidth / 2, displayHeight / 2)
   circleCenter.set(centerX.toFloat(), centerY.toFloat())

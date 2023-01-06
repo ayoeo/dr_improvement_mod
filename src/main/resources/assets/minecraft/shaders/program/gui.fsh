@@ -21,8 +21,8 @@ uniform float healthPercent;
 
 uniform float showHealth;
 uniform float showEnergy;
-uniform float barWidth;
-uniform float yOffset;
+float barWidth = 39;
+float yOffset = 0.11;
 
 #define PI 3.14159265
 
@@ -45,7 +45,7 @@ float drawEnergyBar(vec2 uv, float percent, bool flip) {
   float purr = (1.0 - percent) * arc;
   float ta = flip ? radians(-90.0 + purr) : radians(90.0 - purr);
   float tb = radians(arc - purr);
-  float rb = 0.01;// TODO - change for THICKNESS aka also make thick happy ? maybe
+  float rb = 0.012;// TODO - change for THICKNESS aka also make thick happy ? maybe
 
   vec2 offset = vec2(0.0, yOffset);// TODO - change to OFFSET IT LOL
   if (showEnergy == 0.0) {
@@ -58,11 +58,11 @@ float drawEnergyBar(vec2 uv, float percent, bool flip) {
 float lenny = 1.3;
 float sizez = 0.025;
 
-float benny = 0.2;
-float zizez = 0.01;
+float benny = 0.25;
+float zizez = 0.012;
 
 float drawManaBar(vec2 uv) {
-  float startWHY = -150.0;
+  float startWHY = -200.0;
   float WHY = startWHY / resolution.y;
   vec2 start = vec2(-benny / 2.0, WHY);
   if (showHealth == 0.0) {
@@ -81,15 +81,37 @@ float drawHealthBar(vec2 uv) {
     return udSegment(uv, start, start + vec2(lenny, 0.0)) - sizez; }
 }
 
-vec4 drawArc(float len, bool filled) {
+vec4 drawArc(float len, vec2 uv, bool bottom) {
   vec4 col = vec4(0.0);
   vec4 outline = vec4(vec3(0.0), colourBase.a);
-  vec4 inner = filled ? colourEnergy : colourBase;
-  float outlineSize = 0.003;
-  col = mix(col, inner, 1.0 - smoothstep(0.0, outlineSize, len + 0.0025));
-  if (!filled) {
-    col = mix(col, outline, 1.0 - smoothstep(0.0, outlineSize, abs(len)));
+
+  float lenn = (benny + sizez * 2.0);
+  float start = -lenn / 2.0;
+
+  float lennW;
+  if (bottom) {
+    lennW = (benny + sizez * 2.0) * min(1.0, max(0.0, (energyPercent - 0.5) * 2.0));
+  } else {
+    lennW = (benny + sizez * 2.0) * min(1.0, energyPercent * 2.0);
   }
+
+  vec4 inner;
+  if (uv.x <= start + lennW) {
+    inner = colourEnergy;
+  } else if (uv.x >= start + lennW) {
+    float mixxy =  uv.x - (start + lennW);
+    if (mixxy < 0.005) {
+      inner = mix(colourEnergy, colourBase, 200.0 * mixxy);
+    } else {
+      inner = colourBase;
+    }
+  } else {
+    inner = colourBase;
+  }
+
+  float outlineSize = 0.003;
+  col = mix(col, inner, 1.0 - smoothstep(0.0, outlineSize, len + .002));
+  col = mix(col, outline, 1.0 - smoothstep(0.0, outlineSize, abs(len)));
   return col;
 }
 
@@ -184,16 +206,14 @@ void main() {
   vec2 uv = (gl_FragCoord.xy * 2.0 - resolution) / resolution.y;
 
   // Top energy bar
-  vec4 top = drawArc(drawEnergyBar(uv, 1.0, false), false);
-  float topPercent = min(1.0, energyPercent * 2.0);
-  vec4 topEnergy = drawArc(drawEnergyBar(uv, topPercent, false), true);
-  vec4 colT = mix(top, topEnergy, topPercent > 0.0 ? topEnergy.a : 0.0);
+//  vec4 top = drawArc(drawEnergyBar(uv, 1.0, false), uv);
+//  vec4 topEnergy = drawArc(drawEnergyBar(uv, topPercent, false), true, uv);
+//  vec4 colT = mix(top, topEnergy, topPercent > 0.0 ? topEnergy.a : 0.0);
+  vec4 colT = drawArc(drawEnergyBar(uv, 1.0, false), uv, false);
 
   // Bottom energy bar
-  vec4 btm = drawArc(drawEnergyBar(uv, 1.0, true), false);
-  float btmPercent = min(1.0, max(0.0, (energyPercent - 0.5) * 2.0));
-  vec4 btmEnergy = drawArc(drawEnergyBar(uv, btmPercent, true), true);
-  vec4 colB = mix(btm, btmEnergy, btmPercent > 0.0 ? btmEnergy.a : 0.0);
+  vec4 colB = drawArc(drawEnergyBar(uv, 1.0, true), uv, true);
+//  vec4 colB = mix(btm, btmEnergy, btmPercent > 0.0 ? btmEnergy.a : 0.0);
 
   // Mana bar
   vec4 mana = drawManaArc(drawManaBar(uv), false, uv);

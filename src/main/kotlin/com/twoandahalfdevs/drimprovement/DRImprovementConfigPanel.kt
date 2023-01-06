@@ -276,5 +276,19 @@ class DRImprovementConfigPanel : AbstractConfigPanel() {
       it.displayString =
         "Show Particles: ${LiteModDRImprovement.mod.showParticles}"
     }
+
+    this.addControl(
+      GuiButton(
+        0,
+        0,
+        630,
+        "No Hurt Cam: ${LiteModDRImprovement.mod.noHurtCam}"
+      )
+    ) {
+      LiteModDRImprovement.mod.noHurtCam =
+        !LiteModDRImprovement.mod.noHurtCam
+      it.displayString =
+        "No Hurt Cam: ${LiteModDRImprovement.mod.noHurtCam}"
+    }
   }
 }
