@@ -7,11 +7,9 @@
   "mixins": [
     "AbstractClientPlayerMixin",
     "EntityPlayerSpMixin",
-    "EntityRendererMixin",
     "GuiBossOverlayMixin",
     "GuiIngameMixin",
     "GuiNewChatMixin",
-    "ItemModelGeneratorMixin",
     "ItemRendererMixin",
     "ItemStackMixin",
     "MinecraftMixin",

@@ -158,10 +158,6 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
   @SerializedName("threaded_mouse_input")
   var threadedMouseInput = false
 
-  @Expose
-  @SerializedName("no_hurt_cam")
-  var noHurtCam = false
-
   companion object {
     lateinit var mod: LiteModDRImprovement
 
@@ -265,8 +261,8 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
       SPacketEntityMetadata::class.java,
       SPacketTabComplete::class.java,
       SPacketTitle::class.java,
-      SPacketChat::class.java
-      //, SPacketSetExperience::class.java
+      SPacketChat::class.java,
+      SPacketEntityVelocity::class.java
     )
 
   private var scoreWasUpdated = mutableMapOf<String, Int>()
@@ -276,19 +272,8 @@ class LiteModDRImprovement : LiteMod, HUDRenderListener, Tickable, PacketHandler
 
   data class UpdateInfo(var goodToUpdate: Boolean, val freshHealth: Int)
 
-  //  private var lastExp = 1f
   override fun handlePacket(netHandler: INetHandler?, packet: Packet<*>?): Boolean {
     if (minecraft.player == null) return true
-//    if (packet is SPacketSetExperience) {
-//      val exp = packet.experienceBar
-//      val usedExp = lastExp - exp
-//      if (exp < lastExp) {
-//        println("Used: $usedExp")
-//      }
-//      lastExp = exp
-//      return true
-//    }
-
     if (packet is SPacketUpdateScore) {
       if (packet.objectiveName != "health") {
         return true
