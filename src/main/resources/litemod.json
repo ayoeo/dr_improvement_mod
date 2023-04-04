@@ -1,12 +1,12 @@
 {
-  "name": "dr_improvement",
-  "displayName": "DR Improvement Mod",
+  "name": "dr_pings",
+  "displayName": "DR Pinging",
   "mcversion": "${mcversion}",
   "version": "${version}",
-  "author": "rice, and only rice",
+  "author": "beanz",
   "revision": 0,
-  "description": "buy onlyrice by only rice to fund lonely rice",
+  "description": "ping with guild chat",
   "mixinConfigs": [
-    "mixin.drimprovement.json"
+    "mixin.drpings.json"
   ]
 }
