@@ -22,7 +22,7 @@ plugins {
 apply(plugin = "net.minecraftforge.gradle.liteloader")
 apply(plugin = "org.spongepowered.mixin")
 
-group = "com.twoandahalfdevs"
+group = "com.beanz"
 version = "1.0-SNAPSHOT"
 val mcVersion = "1.12.2"
 
@@ -50,7 +50,7 @@ configure<org.spongepowered.asm.gradle.plugins.MixinExtension> {
 }
 
 java.sourceSets["main"].ext {
-  set("refMap", "mixin.drimprovement.refmap.json")
+  set("refMap", "mixin.drpings.refmap.json")
 }
 
 tasks.withType<ProcessResources> {

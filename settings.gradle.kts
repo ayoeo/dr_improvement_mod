@@ -1,3 +1,3 @@
 
-rootProject.name = "dr_improvement_mod"
+rootProject.name = "dr_ping_mod"
 

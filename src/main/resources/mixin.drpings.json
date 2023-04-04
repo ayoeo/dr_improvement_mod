@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.4.10",
+  "package": "com.beanz.drpings.mixins",
+  "refmap": "mixin.drpings.refmap.json",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+  ]
+}
