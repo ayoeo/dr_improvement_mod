@@ -1,8 +1,8 @@
 {
   "required": true,
   "minVersion": "0.4.10",
-  "package": "com.twoandahalfdevs.drimprovement.mixins",
-  "refmap": "mixin.drimprovement.refmap.json",
+  "package": "com.beanz.drpings.mixins",
+  "refmap": "mixin.drpings.refmap.json",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "AbstractClientPlayerMixin",
