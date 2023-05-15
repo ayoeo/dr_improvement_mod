@@ -1,17 +1,22 @@
 package com.beanz.drpings
 
+import com.mojang.realmsclient.client.Ping
 import com.mumfrey.liteloader.*
 import com.mumfrey.liteloader.core.LiteLoader
 import com.mumfrey.liteloader.core.LiteLoaderEventBroker
 import com.mumfrey.liteloader.modconfig.ConfigPanel
 import com.mumfrey.liteloader.modconfig.ConfigStrategy
 import com.mumfrey.liteloader.modconfig.ExposableOptions
+import javafx.geometry.Pos
 import net.java.games.input.ControllerEnvironment
 import net.minecraft.client.Minecraft
 import net.minecraft.client.entity.EntityPlayerSP
 import net.minecraft.client.gui.FontRenderer
+import net.minecraft.client.gui.Gui
+import net.minecraft.client.renderer.GlStateManager
 import net.minecraft.client.renderer.Tessellator
-import net.minecraft.client.renderer.entity.RenderManager
+import net.minecraft.client.renderer.texture.TextureMap
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats
 import net.minecraft.client.settings.KeyBinding
 import net.minecraft.init.Blocks
 import net.minecraft.network.INetHandler
@@ -21,24 +26,22 @@ import net.minecraft.network.play.server.*
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.RayTraceResult
 import net.minecraft.util.math.Vec3d
-import net.minecraft.util.text.ChatType
 import net.minecraft.util.text.ITextComponent
-import net.minecraft.util.text.TextComponentString
-import net.minecraft.util.text.TextFormatting
 import net.minecraft.world.World
+import org.lwjgl.BufferUtils
 import org.lwjgl.input.Keyboard
+import org.lwjgl.opengl.Display
 import org.lwjgl.opengl.GL11
-import org.lwjgl.util.Color
+import org.lwjgl.util.glu.GLU
 import java.io.File
 import java.lang.Math.*
 import java.lang.reflect.Constructor
-import kotlin.math.abs
 
 
 val minecraft: Minecraft
     get() = Minecraft.getMinecraft()
 
-var pings =  ArrayList<PingThing>()
+var pings = ArrayList<PingThing>()
 private val locationPing = """.*\^ABC\%D.*""".toRegex()
 val pingKeybind = KeyBinding("Ping location", Keyboard.KEY_V, "Dr Ping Mod");
 
@@ -78,13 +81,13 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
             val text = pingmatches.value;
             val split = text.split(" ")
             val len = split.size
-            val x = split[len-4].toInt()
-            val y = split[len-3].toInt()
-            val z = split[len-2].toInt()
-            val name = split[len-6]
+            val x = split[len - 4].toInt()
+            val y = split[len - 3].toInt()
+            val z = split[len - 2].toInt()
+            val name = split[len - 6]
             var frog = false
-            for (thing in pings){
-                if (thing.`is`(name)){
+            for (thing in pings) {
+                if (thing.`is`(name)) {
                     thing.x = x
                     thing.y = y
                     thing.z = z
@@ -139,6 +142,95 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
         }
         return null
     }
+
+    private fun renderTick(pings: ArrayList<PingThing>, partialTicks: Float) {
+        for (ding in pings) {
+            val pos = Position(ding.x.toDouble(), ding.y.toDouble(), ding.z.toDouble())
+            val pos2d = get2DCoordinates(pos.x, pos.y, pos.z)
+            if (pos2d != null) {
+                if (pos2d.z < 0.01 || pos2d.z > 1.0) continue
+
+
+                GlStateManager.pushMatrix()
+
+                GlStateManager.translate(pos2d.x, pos2d.y, 0.0)
+                val cameraPo = cameraPos()
+                // Distance scaling
+                val me = minecraft.player
+                val mypos = Position(
+                    me.posX + (me.posX - me.lastTickPosX) * partialTicks + cameraPo.x,
+                    me.posY + (me.posY - me.lastTickPosY) * partialTicks + cameraPo.y,
+                    me.posZ + (me.posZ - me.lastTickPosZ) * partialTicks + cameraPo.z
+                )
+
+                var dist = dist(mypos, pos.copy(y = pos.y + 2.0))
+                dist = dist.coerceIn(minDist..maxDist)
+                val scaley = 20.0 / dist
+//      val fovSetting = minecraft.gameSettings.fovSetting
+//      val fovModifier = 1.0//;//minecraft.entityRenderer.getFOVModifier()
+
+                val coolScale = scaley * scale
+                GlStateManager.scale(coolScale, coolScale, coolScale)
+
+                drawTag(ding.name)
+
+                GlStateManager.popMatrix()
+            }
+        }
+    }
+
+    private fun drawTag(name: String) {
+        val xBuffer = 4
+        val yBuffer = 3
+        val fontRenderer = minecraft.fontRenderer
+        val strLength = fontRenderer.getStringWidth(name)
+
+        val width = strLength + xBuffer * 2
+        val height = fontRenderer.FONT_HEIGHT * 2 + yBuffer * 2
+
+        val borderSize = 1
+        val borderColor = 0xFF000000.toInt()
+        val innerColor = 0x99000000.toInt()
+
+        val x = -width / 2
+        val y = -height / 2
+
+        // Lines
+//    Gui.drawRect(x, y, x + width, y + borderSize, borderColor) //top
+//    Gui.drawRect(x + width - borderSize, y, x + width, y + height, borderColor) //right
+//    Gui.drawRect(x, y + height - borderSize, x + width, y + height, borderColor) //botton
+//    Gui.drawRect(x, y, x + borderSize, y + height, borderColor) //left
+
+        Gui.drawRect(
+            x,
+            y,
+            x + width,
+            y + height,
+            innerColor
+        )
+        val string = name
+        fontRenderer.drawString(
+            string,
+            x + xBuffer,
+            y + yBuffer + 1,
+            0xFFFFFF
+        )
+
+
+
+    }
+
+    private var scale =.15
+    private var minDist =4.0
+    private var maxDist =35.0
+    private fun dist(p1: Position, p2: Position): Double {
+        val xDelta: Double = p1.x - p2.x
+        val yDelta: Double = p1.y - p2.y
+        val zDelta: Double = p1.z - p2.z
+        return sqrt(xDelta * xDelta + yDelta * yDelta + zDelta * zDelta)
+    }
+
+
     override fun onTick(
         minecraft: Minecraft?,
         partialTicks: Float,
@@ -149,21 +241,23 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
 
         }
 
+
+        renderTick(pings, partialTicks)
         if (inGame && minecraft?.currentScreen == null) {
             if (pingKeybind.isPressed) {
 
                 val player = minecraft!!.player
-                val world= minecraft!!.world
+                val world = minecraft!!.world
 
                 val partialTicks = minecraft!!.renderPartialTicks
                 val reachDistance = 200.0
-                val eyePosition= player.getPositionEyes(partialTicks)
+                val eyePosition = player.getPositionEyes(partialTicks)
                 val lookVector = player.getLook(partialTicks)
 
                 val reachPoint = eyePosition.add(lookVector.scale(reachDistance))
 
-                val  result = recursiveRayTrace(world, eyePosition, reachPoint);
-                if (result!= null) {
+                val result = recursiveRayTrace(world, eyePosition, reachPoint);
+                if (result != null) {
 
                     val x = result.x
                     val y = result.y
@@ -173,7 +267,7 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
 
 
 
-                    minecraft?.player?.sendChatMessage("/g ^ABC%D "+x+" "+ y+" "+z)
+                    minecraft?.player?.sendChatMessage("/g ^ABC%D " + x + " " + y + " " + z)
 
                 }
 
@@ -181,83 +275,196 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
         }
 
 
-
     }
 
-    fun displayWaypoint(playerX: Double, playerY: Double, playerZ: Double, yawDegrees: Double, pitchDegrees: Double, screenWidth: Int, screenHeight: Int, waypointX: Double, waypointY: Double, waypointZ: Double, pointname: String) {
+    fun displayWaypoint(
+        playerX: Double,
+        playerY: Double,
+        playerZ: Double,
+        yawDegrees: Double,
+        pitchDegrees: Double,
+        screenWidth: Int,
+        screenHeight: Int,
+        waypointX: Double,
+        waypointY: Double,
+        waypointZ: Double,
+        pointname: String
+    ) {
 
-        val dx = waypointX - playerX
-        val dy = waypointY - playerY
-        val dz = waypointZ - playerZ
+        /*val playerPos = Vec3d(playerX, playerY, playerZ)
+        val waypointPos = Vec3d(waypointX, waypointY, waypointZ)
 
-        val distance = sqrt(dx * dx + dy * dy + dz * dz)
+        val transformedPos = waypointPos.subtract(playerPos).rotateYaw((-(Math.PI.toFloat() / 180.0f * yawDegrees).toDouble()).toFloat()).rotatePitch(
+            (-(Math.PI.toFloat() / 180.0f * pitchDegrees).toDouble()).toFloat()
+        )
 
-        //var horizontalAngle = atan2(-dx, dz) - ((yawDegrees) * PI / 180.0)
+        val viewDir = Vec3d(0.0, 0.0, 1.0).rotateYaw((-(Math.PI.toFloat() / 180.0f * yawDegrees).toDouble()).toFloat()).rotatePitch(
+            (-(Math.PI.toFloat() / 180.0f * pitchDegrees).toDouble()).toFloat()
+        )
 
-        val horizontalAngle = atan2(-dx, dz)
+        val dotProduct = transformedPos.dotProduct(viewDir)
 
-        // Convert yaw to the range [-180, 180]
-        val yaw = yawDegrees % 360.0
-        val yawAdjusted = if (yaw > 180.0) yaw - 360.0 else yaw
-
-        // Adjust horizontalAngle based on the player's yaw
-        val horizontalAngleAdjusted = horizontalAngle - (yawAdjusted * PI / 180.0)
-
-
-        val verticalAngle = atan2(dy, sqrt(dx * dx + dz * dz))
-
-        if (verticalAngle > PI /2 || verticalAngle < -PI/2) {
-            // Waypoint is behind the player, don't display it
+        if (dotProduct < 0) {
             return
         }
 
-        val maxHorizontalAngle = PI / 1.25
+        transformedPos.add(playerPos)
 
-        if (abs(horizontalAngleAdjusted) > maxHorizontalAngle) {
-            // Waypoint is outside the player's field of view, don't display it
-            return
-        }
-
-        val halfWidth = screenWidth / 2
-        val halfHeight = screenHeight / 2
-        val x = halfWidth + (halfWidth * horizontalAngleAdjusted / PI)
-        val y = halfHeight - (halfHeight * verticalAngle / (PI / 2))
-
-
-        var extra = " "
-        extra +=distance.toInt()
-
+        val x = screenWidth / 2.0 + (transformedPos.x / transformedPos.z) * screenWidth / 2.0
+        val y = screenHeight / 2.0 - (transformedPos.y / transformedPos.z) * screenHeight / 2.0*/
+        /*val fov = minecraft.gameSettings.fovSetting
+        val dx = playerX-waypointX
+        val dy = playerZ - waypointZ
+        val wfi: Double = correctAngle((atan2(dx, dy) * (180 / PI)).toFloat())
+        val pfi: Double = correctAngle(pitchDegrees.toFloat() % 360)
+        val a0: Double = pfi - fov / 2
+        val a1: Double = pfi + fov / 2
+        val ax: Double = correctAngle((2 * pfi - wfi).toFloat())
+        val scale: Double = (clamp(ax, a0, a1) - a0) / fov
         // Draw the waypoint on the screen
-        // Example code:
-        drawWaypoint(x.toInt(), y.toInt(), pointname+extra)
+        val x =
+            round(clamp((screenWidth - screenWidth * scale  / 2).toDouble(), 0.0, screenWidth.toDouble()))
+                .toInt()
+        val y: Int = screenHeight/2 + 50*/
+
+        val xy = get2DCoordinates(waypointX, waypointY, waypointZ)
+
+        if (xy != null) {
+            drawWaypoint(xy.x.toInt(), xy.y.toInt(), pointname)
+        }
+    }
+
+
+    fun cameraPos(): Position {
+        val cameraPos = BufferUtils.createFloatBuffer(16)
+        val viewport = BufferUtils.createIntBuffer(16)
+        val modelView = BufferUtils.createFloatBuffer(16)
+        val projection = BufferUtils.createFloatBuffer(16)
+        GL11.glGetFloat(
+            GL11.GL_MODELVIEW_MATRIX,
+            modelView
+        )
+        GL11.glGetFloat(
+            GL11.GL_PROJECTION_MATRIX,
+            projection
+        )
+        GL11.glGetInteger(
+            GL11.GL_VIEWPORT,
+            viewport
+        )
+
+        GLU.gluUnProject(
+            ((viewport[2] - viewport[0]) / 2).toFloat(),
+            ((viewport[3] - viewport[1]) / 2).toFloat(),
+            0.0F,
+            modelView,
+            projection,
+            viewport,
+            cameraPos
+        )
+
+        return Position(
+            cameraPos[0].toDouble(),
+            cameraPos[1].toDouble(),
+            cameraPos[2].toDouble()
+        )
+    }
+
+    fun get2DCoordinates(x: Double, y: Double, z: Double): Position? {
+        val screenCoordinates = BufferUtils.createFloatBuffer(3)
+        val viewport = BufferUtils.createIntBuffer(16)
+        val modelView = BufferUtils.createFloatBuffer(16)
+        val projection = BufferUtils.createFloatBuffer(16)
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, modelView)
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, projection)
+        GL11.glGetInteger(GL11.GL_VIEWPORT, viewport)
+        val result = GLU.gluProject(
+            x.toFloat(),
+            y.toFloat(),
+            z.toFloat(),
+            modelView,
+            projection,
+            viewport,
+            screenCoordinates
+        )
+
+        return if (result) Position(
+            screenCoordinates[0].toDouble(),
+            Display.getHeight() - screenCoordinates[1].toDouble(),
+            screenCoordinates[2].toDouble()
+        ) else null
+    }
+
+    private fun correctAngle(angle: Float): Double {
+        return if (angle < 0) angle + 360.0 else if (angle >= 360.0) angle - 360.0 else angle.toDouble()
     }
 
     fun drawWaypoint(x: Int, y: Int, text: String) {
-        // Example code:
-        drawStringAtLocation(minecraft.fontRenderer, x.toDouble(),y.toDouble(), text)
+        val minecraft = Minecraft.getMinecraft()
+
+        // Set the render color to white
+        GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f)
+
+        // Bind the texture for the label background
+        minecraft.textureManager.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)
+
+        // Set up the texture coordinates for the label background
+        val uMin = 16 / 256.0
+        val vMin = 16 / 256.0
+        val uMax = 32 / 256.0
+        val vMax = 32 / 256.0
+
+        // Calculate the size of the label background
+        val labelWidth = minecraft.fontRenderer.getStringWidth(text) + 4
+        val labelHeight = minecraft.fontRenderer.FONT_HEIGHT + 4
+
+        // Calculate the position of the label background
+        val backgroundX = x - labelWidth / 2
+        val backgroundY = y - labelHeight / 2
+
+        // Draw the label background
+        val tessellator = Tessellator.getInstance()
+        val bufferBuilder = tessellator.buffer
+        bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX)
+        bufferBuilder.pos(backgroundX.toDouble(), (backgroundY + labelHeight).toDouble(), 0.0).tex(uMin, vMax)
+            .endVertex()
+        bufferBuilder.pos((backgroundX + labelWidth).toDouble(), (backgroundY + labelHeight).toDouble(), 0.0)
+            .tex(uMax, vMax).endVertex()
+        bufferBuilder.pos((backgroundX + labelWidth).toDouble(), backgroundY.toDouble(), 0.0).tex(uMax, vMin)
+            .endVertex()
+        bufferBuilder.pos(backgroundX.toDouble(), backgroundY.toDouble(), 0.0).tex(uMin, vMin).endVertex()
+        tessellator.draw()
+
+        // Draw the label text
+        minecraft.fontRenderer.drawString(
+            text,
+            x - minecraft.fontRenderer.getStringWidth(text) / 2,
+            y - minecraft.fontRenderer.FONT_HEIGHT / 2,
+            -1
+        )
     }
 
     override fun onPreRenderHUD(screenWidth: Int, screenHeight: Int) {
-
+        renderTick(pings, minecraft.renderPartialTicks)
 
         // Get the player's position and orientation
         val player = Minecraft.getMinecraft().player
         val px = player.posX
-        val py = player.posY+ 1
+        val py = player.posY + 1
         val pz = player.posZ
         val pitch = player.pitchYaw.x.toDouble()
         val yaw = player.pitchYaw.y.toDouble()
 
         for (waypoint in pings) {
             val xPos = waypoint.x.toDouble()
-            val yPos = waypoint.y.toDouble()+1
+            val yPos = waypoint.y.toDouble()
             val zPos = waypoint.z.toDouble()
             val text = waypoint.name
             //renderLabel(waypoint, text, screenWidth.toDouble(), -minecraft.renderManager.viewerPosY, screenHeight.toDouble())
             //val xy = calculateScreenCoordinate(screenWidth, screenHeight, px, py, pz, xPos, yPos, zPos, pitch, yaw)
             //drawStringAtLocation(minecraft.fontRenderer, xy.first,xy.second, text)
             // Adjust the Y offset for the next waypoint
-            displayWaypoint(px,py,pz,yaw,pitch,screenWidth,screenHeight,xPos,yPos,zPos,text)
+            displayWaypoint(px, py, pz, yaw, pitch, screenWidth, screenHeight, xPos, yPos, zPos, text)
         }
 
     }
@@ -314,12 +521,12 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
         var par5 = par5
         var par7 = par7
         val px = minecraft.player.posX
-        val py = minecraft.player.posX+ minecraft.player.eyeHeight
+        val py = minecraft.player.posX + minecraft.player.eyeHeight
         val pz = minecraft.player.posZ
         val wx = par1EntityWaypoint.x.toDouble()
-        val wy = par1EntityWaypoint.y.toDouble()+1
+        val wy = par1EntityWaypoint.y.toDouble() + 1
         val wz = par1EntityWaypoint.z.toDouble()
-        val dist = distanceBetweenPoints(px,py,pz,wz,wy,wz)
+        val dist = distanceBetweenPoints(px, py, pz, wz, wy, wz)
         var var10 = Math.sqrt(dist)
         if (var10 <= 1000) {
             par2Str += " (" + var10.toInt() + "m)"
@@ -347,7 +554,12 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
 
 
             GL11.glEnable(GL11.GL_TEXTURE_2D)
-            var12.drawString(par2Str, -var12.getStringWidth(par2Str) / 2, var16.toInt(), 0xffaaaaaa.toInt()); // draw grey with no depth then white with depth.  White shows if it's in front, grey otherwise
+            var12.drawString(
+                par2Str,
+                -var12.getStringWidth(par2Str) / 2,
+                var16.toInt(),
+                0xffaaaaaa.toInt()
+            ); // draw grey with no depth then white with depth.  White shows if it's in front, grey otherwise
             //GL11.glEnable(GL11.GL_DEPTH_TEST); // except we comment out the grey, and just draw the white in front of everything
             //GL11.glDepthMask(true);
             var12.drawString(par2Str, -var12.getStringWidth(par2Str) / 2, var16.toInt(), -1)
@@ -395,7 +607,6 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
     }
 
 
-
     override fun init(configPath: File?) {
         mod = this
 
@@ -404,3 +615,5 @@ class LiteModDRPings : LiteMod, HUDRenderListener, Tickable, PacketHandler, Chat
 
     }
 }
+
+data class Position(var x: Double, var y: Double, var z: Double)
